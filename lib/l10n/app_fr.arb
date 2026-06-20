@@ -1,0 +1,218 @@
+{
+  "@@locale": "fr",
+
+  "appName": "CALMA",
+  "appTagline": "Comme À La Maison",
+
+  "continueAction": "Continuer",
+  "skipAction": "Passer",
+  "saveAction": "Enregistrer",
+  "cancelAction": "Annuler",
+  "deleteAction": "Supprimer",
+  "editAction": "Modifier",
+  "confirmAction": "Confirmer",
+  "backAction": "Retour",
+  "retryAction": "Réessayer",
+  "closeAction": "Fermer",
+  "yesAction": "Oui",
+  "noAction": "Non",
+  "sendAction": "Envoyer",
+  "searchAction": "Rechercher",
+  "filterAction": "Filtrer",
+  "seeAllAction": "Voir tout",
+  "loadMoreAction": "Charger plus",
+
+  "onboardingTitle1": "Des plats qui rappellent chez vous",
+  "onboardingSubtitle1": "Trouvez des plats préparés avec amour par vos camarades étudiants.",
+  "onboardingTitle2": "Partagez votre cuisine",
+  "onboardingSubtitle2": "Vendez les plats de votre pays et faites découvrir votre culture.",
+  "onboardingTitle3": "Commandez facilement",
+  "onboardingSubtitle3": "Commandez ou pré-commandez en quelques touches.",
+  "getStarted": "Commencer",
+  "alreadyHaveAccount": "J'ai déjà un compte",
+
+  "loginTitle": "Bon retour",
+  "loginSubtitle": "Connectez-vous à votre compte",
+  "emailLabel": "Adresse email",
+  "emailHint": "votre@email.com",
+  "passwordLabel": "Mot de passe",
+  "passwordHint": "Votre mot de passe",
+  "forgotPassword": "Mot de passe oublié ?",
+  "loginButton": "Se connecter",
+  "noAccountYet": "Pas encore de compte ?",
+  "signUpLink": "S'inscrire",
+  "orWith": "Ou avec",
+  "continueWithGoogle": "Continuer avec Google",
+  "continueWithApple": "Continuer avec Apple",
+
+  "registerTitle": "Créer un compte",
+  "registerSubtitle": "Rejoignez la communauté CALMA",
+  "firstNameLabel": "Prénom",
+  "lastNameLabel": "Nom",
+  "phoneLabel": "Téléphone (optionnel)",
+  "registerButton": "Créer mon compte",
+  "alreadyHaveAccountLogin": "Déjà un compte ?",
+  "loginLink": "Se connecter",
+  "termsAgreement": "En vous inscrivant, vous acceptez nos ",
+  "termsOfService": "Conditions d'utilisation",
+  "andThe": " et la ",
+  "privacyPolicy": "Politique de confidentialité",
+
+  "roleSelectionTitle": "Comment souhaitez-vous utiliser CALMA ?",
+  "roleBuyer": "Acheteur",
+  "roleBuyerDescription": "Je cherche des plats faits maison",
+  "roleVendor": "Vendeur",
+  "roleVendorDescription": "Je veux cuisiner et vendre mes plats",
+  "roleBoth": "Les deux",
+  "roleBothDescription": "Je veux acheter et vendre",
+
+  "homeTabLabel": "Accueil",
+  "exploreTabLabel": "Explorer",
+  "ordersTabLabel": "Commandes",
+  "postsTabLabel": "Publications",
+  "profileTabLabel": "Profil",
+
+  "homeGreetingMorning": "Bonjour {name}",
+  "@homeGreetingMorning": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeGreetingAfternoon": "Bon après-midi {name}",
+  "@homeGreetingAfternoon": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeGreetingEvening": "Bonsoir {name}",
+  "@homeGreetingEvening": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeSearchHint": "Rechercher un plat, un pays, un vendeur...",
+  "homeFeaturedVendors": "Vendeurs à la une",
+  "homeAvailableToday": "Disponibles aujourd'hui",
+  "homeNearby": "Près de vous",
+  "homePopularDishes": "Plats populaires",
+
+  "vendorOpenNow": "Ouvert maintenant",
+  "vendorClosedToday": "Fermé aujourd'hui",
+  "vendorPreorderAvailable": "Précommande disponible",
+  "vendorRating": "{rating} ({count} avis)",
+  "@vendorRating": {
+    "placeholders": {
+      "rating": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "vendorDishCount": "{count} plats",
+  "@vendorDishCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "vendorOrigin": "Cuisine {country}",
+  "@vendorOrigin": {
+    "placeholders": {
+      "country": {"type": "String"}
+    }
+  },
+
+  "dishPrice": "{price} €",
+  "@dishPrice": {
+    "placeholders": {
+      "price": {"type": "String"}
+    }
+  },
+  "dishOrderButton": "Commander",
+  "dishPreorderButton": "Pré-commander",
+  "dishUnavailable": "Indisponible",
+  "dishPreparationTime": "Prêt dans {time}",
+  "@dishPreparationTime": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "orderStatusPending": "En attente",
+  "orderStatusAccepted": "Acceptée",
+  "orderStatusPreparing": "En préparation",
+  "orderStatusReady": "Prête",
+  "orderStatusCompleted": "Livrée",
+  "orderStatusCancelled": "Annulée",
+  "orderStatusRejected": "Refusée",
+
+  "preorderAcompteInstructions": "Envoyez l'acompte sur le compte {method} du vendeur ({handle}), puis uploadez la capture ci-dessous.",
+  "@preorderAcompteInstructions": {
+    "placeholders": {
+      "method": {"type": "String"},
+      "handle": {"type": "String"}
+    }
+  },
+  "preorderUploadCapture": "Ajouter la capture du paiement",
+  "preorderCaptureAdded": "Capture ajoutée",
+  "preorderSubmit": "Envoyer ma précommande",
+  "preorderDisclaimerTitle": "Information importante",
+  "preorderDisclaimer": "CALMA ne gère pas les transactions financières. Le paiement se fait directement entre vous et le vendeur. En cas de litige, CALMA peut tenter de médiation mais ne garantit aucun remboursement.",
+
+  "cancellationWarning": "Attention : {count} annulation(s) tardive(s) enregistrée(s) sur votre profil.",
+  "@cancellationWarning": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "cancellationThresholdWarning": "Votre compte sera signalé après 3 annulations tardives.",
+
+  "settingsTitle": "Paramètres",
+  "settingsProfile": "Mon profil",
+  "settingsTheme": "Apparence",
+  "settingsLanguage": "Langue",
+  "settingsNotifications": "Notifications",
+  "settingsAbout": "À propos",
+  "settingsLogout": "Se déconnecter",
+  "settingsDeleteAccount": "Supprimer mon compte",
+
+  "themeLight": "Clair",
+  "themeDark": "Sombre",
+  "themeSystem": "Système",
+  "themeAccentColor": "Couleur principale",
+
+  "languageFrench": "Français",
+  "languageEnglish": "English",
+
+  "errorGeneric": "Une erreur est survenue. Veuillez réessayer.",
+  "errorNetwork": "Pas de connexion internet.",
+  "errorNotFound": "Contenu introuvable.",
+  "errorUnauthorized": "Vous n'êtes pas autorisé à effectuer cette action.",
+  "errorEmailAlreadyUsed": "Cette adresse email est déjà utilisée.",
+  "errorInvalidCredentials": "Email ou mot de passe incorrect.",
+  "errorWeakPassword": "Le mot de passe doit contenir au moins 8 caractères.",
+  "errorInvalidEmail": "Adresse email invalide.",
+
+  "successProfileUpdated": "Profil mis à jour.",
+  "successOrderPlaced": "Commande envoyée.",
+  "successPreorderPlaced": "Précommande envoyée.",
+  "successOrderAccepted": "Commande acceptée.",
+  "successOrderCancelled": "Commande annulée.",
+
+  "emptyStateVendors": "Aucun vendeur disponible pour le moment.",
+  "emptyStateDishes": "Aucun plat disponible.",
+  "emptyStateOrders": "Vous n'avez pas encore de commandes.",
+  "emptyStatePosts": "Aucune publication pour le moment.",
+  "emptyStateChats": "Aucune conversation.",
+
+  "deleteConfirmTitle": "Confirmer la suppression",
+  "deleteConfirmMessage": "Cette action est irréversible. Voulez-vous continuer ?",
+
+  "logoutConfirmTitle": "Se déconnecter",
+  "logoutConfirmMessage": "Voulez-vous vraiment vous déconnecter ?",
+
+  "referralBadgeAmbassador": "Ambassadeur",
+  "referralShareMessage": "Rejoins CALMA et trouve des plats de chez toi ! {link}",
+  "@referralShareMessage": {
+    "placeholders": {
+      "link": {"type": "String"}
+    }
+  }
+}

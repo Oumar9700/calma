@@ -1,0 +1,218 @@
+{
+  "@@locale": "en",
+
+  "appName": "CALMA",
+  "appTagline": "Just Like Home",
+
+  "continueAction": "Continue",
+  "skipAction": "Skip",
+  "saveAction": "Save",
+  "cancelAction": "Cancel",
+  "deleteAction": "Delete",
+  "editAction": "Edit",
+  "confirmAction": "Confirm",
+  "backAction": "Back",
+  "retryAction": "Retry",
+  "closeAction": "Close",
+  "yesAction": "Yes",
+  "noAction": "No",
+  "sendAction": "Send",
+  "searchAction": "Search",
+  "filterAction": "Filter",
+  "seeAllAction": "See all",
+  "loadMoreAction": "Load more",
+
+  "onboardingTitle1": "Dishes that remind you of home",
+  "onboardingSubtitle1": "Find meals lovingly prepared by fellow students.",
+  "onboardingTitle2": "Share your cuisine",
+  "onboardingSubtitle2": "Sell dishes from your country and share your culture.",
+  "onboardingTitle3": "Order easily",
+  "onboardingSubtitle3": "Order or pre-order in just a few taps.",
+  "getStarted": "Get Started",
+  "alreadyHaveAccount": "I already have an account",
+
+  "loginTitle": "Welcome back",
+  "loginSubtitle": "Sign in to your account",
+  "emailLabel": "Email address",
+  "emailHint": "your@email.com",
+  "passwordLabel": "Password",
+  "passwordHint": "Your password",
+  "forgotPassword": "Forgot password?",
+  "loginButton": "Sign in",
+  "noAccountYet": "No account yet?",
+  "signUpLink": "Sign up",
+  "orWith": "Or with",
+  "continueWithGoogle": "Continue with Google",
+  "continueWithApple": "Continue with Apple",
+
+  "registerTitle": "Create an account",
+  "registerSubtitle": "Join the CALMA community",
+  "firstNameLabel": "First name",
+  "lastNameLabel": "Last name",
+  "phoneLabel": "Phone (optional)",
+  "registerButton": "Create my account",
+  "alreadyHaveAccountLogin": "Already have an account?",
+  "loginLink": "Sign in",
+  "termsAgreement": "By signing up, you agree to our ",
+  "termsOfService": "Terms of Service",
+  "andThe": " and the ",
+  "privacyPolicy": "Privacy Policy",
+
+  "roleSelectionTitle": "How would you like to use CALMA?",
+  "roleBuyer": "Buyer",
+  "roleBuyerDescription": "I'm looking for homemade meals",
+  "roleVendor": "Vendor",
+  "roleVendorDescription": "I want to cook and sell my dishes",
+  "roleBoth": "Both",
+  "roleBothDescription": "I want to buy and sell",
+
+  "homeTabLabel": "Home",
+  "exploreTabLabel": "Explore",
+  "ordersTabLabel": "Orders",
+  "postsTabLabel": "Posts",
+  "profileTabLabel": "Profile",
+
+  "homeGreetingMorning": "Good morning, {name}",
+  "@homeGreetingMorning": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeGreetingAfternoon": "Good afternoon, {name}",
+  "@homeGreetingAfternoon": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeGreetingEvening": "Good evening, {name}",
+  "@homeGreetingEvening": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeSearchHint": "Search for a dish, country, vendor...",
+  "homeFeaturedVendors": "Featured vendors",
+  "homeAvailableToday": "Available today",
+  "homeNearby": "Near you",
+  "homePopularDishes": "Popular dishes",
+
+  "vendorOpenNow": "Open now",
+  "vendorClosedToday": "Closed today",
+  "vendorPreorderAvailable": "Pre-order available",
+  "vendorRating": "{rating} ({count} reviews)",
+  "@vendorRating": {
+    "placeholders": {
+      "rating": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "vendorDishCount": "{count} dishes",
+  "@vendorDishCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "vendorOrigin": "{country} cuisine",
+  "@vendorOrigin": {
+    "placeholders": {
+      "country": {"type": "String"}
+    }
+  },
+
+  "dishPrice": "€{price}",
+  "@dishPrice": {
+    "placeholders": {
+      "price": {"type": "String"}
+    }
+  },
+  "dishOrderButton": "Order",
+  "dishPreorderButton": "Pre-order",
+  "dishUnavailable": "Unavailable",
+  "dishPreparationTime": "Ready in {time}",
+  "@dishPreparationTime": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "orderStatusPending": "Pending",
+  "orderStatusAccepted": "Accepted",
+  "orderStatusPreparing": "Preparing",
+  "orderStatusReady": "Ready",
+  "orderStatusCompleted": "Completed",
+  "orderStatusCancelled": "Cancelled",
+  "orderStatusRejected": "Rejected",
+
+  "preorderAcompteInstructions": "Send the deposit to the vendor's {method} account ({handle}), then upload the screenshot below.",
+  "@preorderAcompteInstructions": {
+    "placeholders": {
+      "method": {"type": "String"},
+      "handle": {"type": "String"}
+    }
+  },
+  "preorderUploadCapture": "Add payment screenshot",
+  "preorderCaptureAdded": "Screenshot added",
+  "preorderSubmit": "Submit my pre-order",
+  "preorderDisclaimerTitle": "Important notice",
+  "preorderDisclaimer": "CALMA does not handle financial transactions. Payment is made directly between you and the vendor. In case of dispute, CALMA may attempt mediation but does not guarantee any refund.",
+
+  "cancellationWarning": "Warning: {count} late cancellation(s) recorded on your profile.",
+  "@cancellationWarning": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "cancellationThresholdWarning": "Your account will be flagged after 3 late cancellations.",
+
+  "settingsTitle": "Settings",
+  "settingsProfile": "My profile",
+  "settingsTheme": "Appearance",
+  "settingsLanguage": "Language",
+  "settingsNotifications": "Notifications",
+  "settingsAbout": "About",
+  "settingsLogout": "Sign out",
+  "settingsDeleteAccount": "Delete my account",
+
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "themeSystem": "System",
+  "themeAccentColor": "Accent color",
+
+  "languageFrench": "Français",
+  "languageEnglish": "English",
+
+  "errorGeneric": "Something went wrong. Please try again.",
+  "errorNetwork": "No internet connection.",
+  "errorNotFound": "Content not found.",
+  "errorUnauthorized": "You are not authorized to perform this action.",
+  "errorEmailAlreadyUsed": "This email address is already in use.",
+  "errorInvalidCredentials": "Incorrect email or password.",
+  "errorWeakPassword": "Password must be at least 8 characters.",
+  "errorInvalidEmail": "Invalid email address.",
+
+  "successProfileUpdated": "Profile updated.",
+  "successOrderPlaced": "Order sent.",
+  "successPreorderPlaced": "Pre-order sent.",
+  "successOrderAccepted": "Order accepted.",
+  "successOrderCancelled": "Order cancelled.",
+
+  "emptyStateVendors": "No vendors available right now.",
+  "emptyStateDishes": "No dishes available.",
+  "emptyStateOrders": "You have no orders yet.",
+  "emptyStatePosts": "No posts yet.",
+  "emptyStateChats": "No conversations.",
+
+  "deleteConfirmTitle": "Confirm deletion",
+  "deleteConfirmMessage": "This action cannot be undone. Do you want to continue?",
+
+  "logoutConfirmTitle": "Sign out",
+  "logoutConfirmMessage": "Are you sure you want to sign out?",
+
+  "referralBadgeAmbassador": "Ambassador",
+  "referralShareMessage": "Join CALMA and find dishes from home! {link}",
+  "@referralShareMessage": {
+    "placeholders": {
+      "link": {"type": "String"}
+    }
+  }
+}

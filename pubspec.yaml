@@ -1,0 +1,68 @@
+name: calma
+description: CALMA — Comme À La Maison. Marketplace de repas faits maison entre étudiants.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Navigation
+  go_router: ^14.6.3
+
+  # State management
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+
+  # Dependency injection
+  get_it: ^8.0.3
+  injectable: ^2.5.0
+
+  # Responsivité
+  flutter_screenutil: ^5.9.3
+
+  # Firebase
+  firebase_core: ^3.13.0
+  firebase_auth: ^5.5.2
+  cloud_firestore: ^5.6.6
+  firebase_storage: ^12.4.5
+  firebase_messaging: ^15.2.5
+
+  # Notifications locales
+  flutter_local_notifications: ^18.0.1
+
+  # Deep links
+  app_links: ^6.4.0
+
+  # Images
+  cached_network_image: ^3.4.1
+  image_picker: ^1.1.2
+
+  # Internationalisation
+  intl: ^0.20.2
+
+  # Utils
+  shared_preferences: ^2.5.3
+  uuid: ^4.5.1
+  timeago: ^3.7.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  injectable_generator: ^2.7.0
+  build_runner: ^2.4.15
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+

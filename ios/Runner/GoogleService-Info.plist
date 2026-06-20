@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>89644533739-mb38ounvm3ogisek4espb5kii3buls8f.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.89644533739-mb38ounvm3ogisek4espb5kii3buls8f</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>89644533739-8cupgdm6v6d2i6998jkohknhesg1q40j.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyC1l9TfYaIDoy6CbgMpS9ra57LdypkvlaU</string>
+	<key>GCM_SENDER_ID</key>
+	<string>89644533739</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.calma.calma</string>
+	<key>PROJECT_ID</key>
+	<string>calma-7ba7d</string>
+	<key>STORAGE_BUCKET</key>
+	<string>calma-7ba7d.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:89644533739:ios:b56ce5bd2120b6857b7bae</string>
+</dict>
+</plist>
