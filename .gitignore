@@ -80,10 +80,15 @@ doc/api/
 # dotenv environment variables file
 .env
 
-### Firebase ###
+### Firebase — secrets (ne jamais committer) ###
 .idea
 **/node_modules/*
 **/.firebaserc
+google-services.json
+**/google-services.json
+GoogleService-Info.plist
+**/GoogleService-Info.plist
+lib/firebase_options.dart
 
 ### Firebase Patch ###
 .runtimeconfig.json
