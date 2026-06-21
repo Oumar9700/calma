@@ -7,6 +7,7 @@ abstract class AppRoutes {
   static const String verifyEmail = '/verify-email';
   static const String forgotPassword = '/forgot-password';
   static const String roleSelection = '/role-selection';
+  static const String profileSetup = '/profile-setup';
 
   // Shell (bottom nav)
   static const String shell = '/app';
@@ -40,6 +41,7 @@ abstract class AppRoutes {
   static const String settings = '/app/settings';
   static const String editProfile = '/app/settings/profile';
   static const String themeSettings = '/app/settings/theme';
+  static const String roleChange = '/app/settings/role';
   static const String languageSettings = '/app/settings/language';
   static const String notificationSettings = '/app/settings/notifications';
 }

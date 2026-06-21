@@ -54,6 +54,14 @@ class ProfileUpdateRequested extends AuthEvent {
   final String? countryOfOrigin;
   final String? city;
   final String? campus;
+  final String? shopName;
+  final String? shopDescription;
+  final List<String>? regions;
+  final List<String>? specialties;
+  final List<String>? paymentMethods;
+  final List<String>? availableDays;
+  final String? approximateLocation;
+  final String? coverPhotoUrl;
 
   const ProfileUpdateRequested({
     this.firstName,
@@ -64,6 +72,14 @@ class ProfileUpdateRequested extends AuthEvent {
     this.countryOfOrigin,
     this.city,
     this.campus,
+    this.shopName,
+    this.shopDescription,
+    this.regions,
+    this.specialties,
+    this.paymentMethods,
+    this.availableDays,
+    this.approximateLocation,
+    this.coverPhotoUrl,
   });
 }
 
@@ -76,4 +92,8 @@ class PasswordResetRequested extends AuthEvent {
   const PasswordResetRequested(this.email);
   @override
   List<Object?> get props => [email];
+}
+
+class GoogleSignInRequested extends AuthEvent {
+  const GoogleSignInRequested();
 }

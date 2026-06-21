@@ -19,6 +19,16 @@ class AppUser extends Equatable {
   final DateTime createdAt;
   final bool isEmailVerified;
 
+  // Champs vendeur
+  final String? shopName;
+  final String? shopDescription;
+  final List<String> regions;
+  final List<String> specialties;
+  final List<String> paymentMethods;
+  final List<String> availableDays;
+  final String? approximateLocation;
+  final String? coverPhotoUrl;
+
   const AppUser({
     required this.uid,
     required this.email,
@@ -36,6 +46,14 @@ class AppUser extends Equatable {
     this.referredBy,
     required this.createdAt,
     this.isEmailVerified = false,
+    this.shopName,
+    this.shopDescription,
+    this.regions = const [],
+    this.specialties = const [],
+    this.paymentMethods = const [],
+    this.availableDays = const [],
+    this.approximateLocation,
+    this.coverPhotoUrl,
   });
 
   String get fullName => '$firstName $lastName'.trim();
@@ -62,6 +80,14 @@ class AppUser extends Equatable {
     String? referralCode,
     String? referredBy,
     bool? isEmailVerified,
+    String? shopName,
+    String? shopDescription,
+    List<String>? regions,
+    List<String>? specialties,
+    List<String>? paymentMethods,
+    List<String>? availableDays,
+    String? approximateLocation,
+    String? coverPhotoUrl,
   }) {
     return AppUser(
       uid: uid,
@@ -80,6 +106,14 @@ class AppUser extends Equatable {
       referredBy: referredBy ?? this.referredBy,
       createdAt: createdAt,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      shopName: shopName ?? this.shopName,
+      shopDescription: shopDescription ?? this.shopDescription,
+      regions: regions ?? this.regions,
+      specialties: specialties ?? this.specialties,
+      paymentMethods: paymentMethods ?? this.paymentMethods,
+      availableDays: availableDays ?? this.availableDays,
+      approximateLocation: approximateLocation ?? this.approximateLocation,
+      coverPhotoUrl: coverPhotoUrl ?? this.coverPhotoUrl,
     );
   }
 
@@ -101,10 +135,21 @@ class AppUser extends Equatable {
       'referredBy': referredBy,
       'createdAt': createdAt.toIso8601String(),
       'isEmailVerified': isEmailVerified,
+      'shopName': shopName,
+      'shopDescription': shopDescription,
+      'regions': regions,
+      'specialties': specialties,
+      'paymentMethods': paymentMethods,
+      'availableDays': availableDays,
+      'approximateLocation': approximateLocation,
+      'coverPhotoUrl': coverPhotoUrl,
     };
   }
 
   factory AppUser.fromFirestore(Map<String, dynamic> data) {
+    List<String> strList(dynamic v) =>
+        (v as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+
     return AppUser(
       uid: data['uid'] as String,
       email: data['email'] as String,
@@ -124,6 +169,14 @@ class AppUser extends Equatable {
           ? DateTime.parse(data['createdAt'] as String)
           : DateTime.now(),
       isEmailVerified: data['isEmailVerified'] as bool? ?? false,
+      shopName: data['shopName'] as String?,
+      shopDescription: data['shopDescription'] as String?,
+      regions: strList(data['regions']),
+      specialties: strList(data['specialties']),
+      paymentMethods: strList(data['paymentMethods']),
+      availableDays: strList(data['availableDays']),
+      approximateLocation: data['approximateLocation'] as String?,
+      coverPhotoUrl: data['coverPhotoUrl'] as String?,
     );
   }
 

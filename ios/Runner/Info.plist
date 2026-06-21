@@ -45,5 +45,20 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.89644533739-mb38ounvm3ogisek4espb5kii3buls8f</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>CALMA a besoin d'accéder à votre galerie pour choisir une photo de profil.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>CALMA a besoin d'accéder à votre appareil photo pour prendre une photo de profil.</string>
 </dict>
 </plist>

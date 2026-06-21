@@ -21,7 +21,16 @@ abstract class AuthRepository {
     String? countryOfOrigin,
     String? city,
     String? campus,
+    String? shopName,
+    String? shopDescription,
+    List<String>? regions,
+    List<String>? specialties,
+    List<String>? paymentMethods,
+    List<String>? availableDays,
+    String? approximateLocation,
+    String? coverPhotoUrl,
   });
   Future<AppUser?> getCurrentUser();
   Future<void> deleteAccount();
+  Future<AppUser> signInWithGoogle();
 }

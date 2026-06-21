@@ -46,6 +46,14 @@ class AuthRepositoryImpl implements AuthRepository {
     String? countryOfOrigin,
     String? city,
     String? campus,
+    String? shopName,
+    String? shopDescription,
+    List<String>? regions,
+    List<String>? specialties,
+    List<String>? paymentMethods,
+    List<String>? availableDays,
+    String? approximateLocation,
+    String? coverPhotoUrl,
   }) =>
       _dataSource.updateProfile(
         firstName: firstName,
@@ -56,6 +64,14 @@ class AuthRepositoryImpl implements AuthRepository {
         countryOfOrigin: countryOfOrigin,
         city: city,
         campus: campus,
+        shopName: shopName,
+        shopDescription: shopDescription,
+        regions: regions,
+        specialties: specialties,
+        paymentMethods: paymentMethods,
+        availableDays: availableDays,
+        approximateLocation: approximateLocation,
+        coverPhotoUrl: coverPhotoUrl,
       );
 
   @override
@@ -63,4 +79,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> deleteAccount() => _dataSource.deleteAccount();
+
+  @override
+  Future<AppUser> signInWithGoogle() => _dataSource.signInWithGoogle();
 }

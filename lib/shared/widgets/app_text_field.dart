@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/extensions/build_context_ext.dart';
 
 
 class AppTextField extends StatefulWidget {
@@ -117,7 +117,7 @@ class _AppTextFieldState extends State<AppTextField> {
               fontFamily: 'PlusJakartaSans',
               fontSize: 13.sp,
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+              color: context.colorOnSurfaceVariant,
             ),
           ),
           SizedBox(height: 6.h),
@@ -141,7 +141,7 @@ class _AppTextFieldState extends State<AppTextField> {
             fontFamily: 'PlusJakartaSans',
             fontSize: 15.sp,
             fontWeight: FontWeight.w400,
-            color: AppColors.textPrimary,
+            color: context.colorOnSurface,
           ),
           decoration: InputDecoration(
             hintText: widget.hint,
@@ -149,13 +149,14 @@ class _AppTextFieldState extends State<AppTextField> {
             prefixIcon: widget.prefixIcon,
             suffixIcon: widget.obscureText
                 ? IconButton(
-                    onPressed: () => setState(() => _obscureText = !_obscureText),
+                    onPressed: () =>
+                        setState(() => _obscureText = !_obscureText),
                     icon: Icon(
                       _obscureText
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
                       size: 20.w,
-                      color: AppColors.textTertiary,
+                      color: context.colorOnSurfaceVariant,
                     ),
                   )
                 : widget.suffixIcon,

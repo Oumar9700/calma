@@ -81,33 +81,35 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool disabled = onPressed == null || isLoading;
 
-    Widget child = isLoading
-        ? SizedBox(
-            width: 20.w,
-            height: 20.w,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: _foregroundColor,
-            ),
-          )
-        : Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (prefixIcon != null) ...[
-                prefixIcon!,
-                AppSpacing.hGapSm,
-              ],
-              Text(label, style: _textStyle(context)),
-              if (suffixIcon != null) ...[
-                AppSpacing.hGapSm,
-                suffixIcon!,
-              ],
-            ],
-          );
-
-    if (isFullWidth) {
-      child = SizedBox(width: double.infinity, child: child);
+    Widget child;
+    if (isLoading) {
+      child = SizedBox(
+        width: 22.w,
+        height: 22.w,
+        child: CircularProgressIndicator(
+          strokeWidth: 2.5,
+          color: _foregroundColor,
+        ),
+      );
+    } else {
+      child = Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (prefixIcon != null) ...[
+            prefixIcon!,
+            AppSpacing.hGapSm,
+          ],
+          Text(label, style: _textStyle(context)),
+          if (suffixIcon != null) ...[
+            AppSpacing.hGapSm,
+            suffixIcon!,
+          ],
+        ],
+      );
+      if (isFullWidth) {
+        child = SizedBox(width: double.infinity, child: child);
+      }
     }
 
     switch (variant) {

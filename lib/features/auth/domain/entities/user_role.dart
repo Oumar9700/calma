@@ -4,6 +4,8 @@ enum UserRole {
   both;
 
   String get firestoreValue => name;
+  bool get isVendor => this == UserRole.vendor || this == UserRole.both;
+  bool get isBuyer => this == UserRole.buyer || this == UserRole.both;
 
   static UserRole fromFirestore(String? value) {
     switch (value) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/extensions/build_context_ext.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -50,15 +51,13 @@ class _RegisterPageState extends State<RegisterPage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is Authenticated) {
-          // Après inscription, aller choisir le rôle
           context.go(AppRoutes.roleSelection);
         }
         if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppColors.error,
-            ),
+                content: Text(state.message),
+                backgroundColor: AppColors.error),
           );
         }
       },
@@ -73,57 +72,47 @@ class _RegisterPageState extends State<RegisterPage> {
                 GestureDetector(
                   onTap: () => context.pop(),
                   child: Icon(Icons.arrow_back,
-                      color: AppColors.textPrimary, size: 24.w),
+                      color: context.colorOnSurface, size: 24.w),
                 ),
                 SizedBox(height: 24.h),
-                Text(
-                  'Créer un compte',
-                  style: TextStyle(
-                    fontFamily: 'PlusJakartaSans',
-                    fontSize: 28.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                Text('Créer un compte',
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 28.sp,
+                      fontWeight: FontWeight.w700,
+                      color: context.colorOnSurface,
+                    )),
                 SizedBox(height: 6.h),
-                Text(
-                  'Rejoignez la communauté CALMA',
-                  style: TextStyle(
-                    fontFamily: 'PlusJakartaSans',
-                    fontSize: 15.sp,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text('Rejoignez la communauté CALMA',
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 15.sp,
+                      color: context.colorOnSurfaceVariant,
+                    )),
                 SizedBox(height: 32.h),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppTextField(
-                        label: 'Prénom',
-                        hint: 'Votre prénom',
-                        controller: _firstNameController,
-                        textInputAction: TextInputAction.next,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Requis';
-                          return null;
-                        },
-                      ),
+                Row(children: [
+                  Expanded(
+                    child: AppTextField(
+                      label: 'Prénom',
+                      hint: 'Votre prénom',
+                      controller: _firstNameController,
+                      textInputAction: TextInputAction.next,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Requis' : null,
                     ),
-                    AppSpacing.hGapMd,
-                    Expanded(
-                      child: AppTextField(
-                        label: 'Nom',
-                        hint: 'Votre nom',
-                        controller: _lastNameController,
-                        textInputAction: TextInputAction.next,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Requis';
-                          return null;
-                        },
-                      ),
+                  ),
+                  AppSpacing.hGapMd,
+                  Expanded(
+                    child: AppTextField(
+                      label: 'Nom',
+                      hint: 'Votre nom',
+                      controller: _lastNameController,
+                      textInputAction: TextInputAction.next,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Requis' : null,
                     ),
-                  ],
-                ),
+                  ),
+                ]),
                 AppSpacing.gapXl,
                 AppTextField(
                   label: 'Adresse email',
@@ -142,7 +131,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   label: 'Mot de passe',
                   hint: 'Minimum 8 caractères',
                   controller: _passwordController,
-                  textInputAction: TextInputAction.done,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Champ requis';
                     if (v.length < 8) return 'Minimum 8 caractères';
@@ -161,44 +149,30 @@ class _RegisterPageState extends State<RegisterPage> {
                 Text(
                   'En vous inscrivant, vous acceptez nos Conditions d\'utilisation et la Politique de confidentialité.',
                   style: TextStyle(
-                    fontFamily: 'PlusJakartaSans',
-                    fontSize: 12.sp,
-                    color: AppColors.textTertiary,
-                    height: 1.5,
-                  ),
+                      fontSize: 12.sp,
+                      color: context.colorOnSurfaceVariant,
+                      height: 1.5),
                   textAlign: TextAlign.center,
                 ),
                 AppSpacing.gapXl,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Déjà un compte ? ',
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text('Déjà un compte ? ',
                       style: TextStyle(
-                        fontFamily: 'PlusJakartaSans',
-                        fontSize: 14.sp,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => context.go(AppRoutes.login),
-                      style: TextButton.styleFrom(
+                          fontSize: 14.sp,
+                          color: context.colorOnSurfaceVariant)),
+                  TextButton(
+                    onPressed: () => context.go(AppRoutes.login),
+                    style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
                         minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'Se connecter',
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    child: Text('Se connecter',
                         style: TextStyle(
-                          fontFamily: 'PlusJakartaSans',
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary)),
+                  ),
+                ]),
               ],
             ),
           ),

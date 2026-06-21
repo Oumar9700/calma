@@ -12,6 +12,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<LoginRequested>(_onLoginRequested);
     on<RegisterRequested>(_onRegisterRequested);
+    on<GoogleSignInRequested>(_onGoogleSignInRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<RoleUpdated>(_onRoleUpdated);
     on<ProfileUpdateRequested>(_onProfileUpdateRequested);
@@ -66,6 +67,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  Future<void> _onGoogleSignInRequested(
+    GoogleSignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
+    try {
+      final user = await _repository.signInWithGoogle();
+      emit(Authenticated(user));
+    } catch (e) {
+      emit(AuthError(_extractMessage(e)));
+    }
+  }
+
   Future<void> _onLogoutRequested(
     LogoutRequested event,
     Emitter<AuthState> emit,
@@ -105,6 +119,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         countryOfOrigin: event.countryOfOrigin,
         city: event.city,
         campus: event.campus,
+        shopName: event.shopName,
+        shopDescription: event.shopDescription,
+        regions: event.regions,
+        specialties: event.specialties,
+        paymentMethods: event.paymentMethods,
+        availableDays: event.availableDays,
+        approximateLocation: event.approximateLocation,
+        coverPhotoUrl: event.coverPhotoUrl,
       );
       final updated = current.copyWith(
         firstName: event.firstName,
@@ -115,6 +137,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         countryOfOrigin: event.countryOfOrigin,
         city: event.city,
         campus: event.campus,
+        shopName: event.shopName,
+        shopDescription: event.shopDescription,
+        regions: event.regions,
+        specialties: event.specialties,
+        paymentMethods: event.paymentMethods,
+        availableDays: event.availableDays,
+        approximateLocation: event.approximateLocation,
+        coverPhotoUrl: event.coverPhotoUrl,
       );
       emit(ProfileUpdateSuccess(updated));
       emit(Authenticated(updated));
