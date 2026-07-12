@@ -38,7 +38,7 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
   ) async {
     emit(state.copyWith(primaryColor: event.color));
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_keyColor, event.color.value);
+    await prefs.setInt(_keyColor, event.color.toARGB32());
   }
 
   ThemeMode _modeFromString(String? v) => switch (v) {

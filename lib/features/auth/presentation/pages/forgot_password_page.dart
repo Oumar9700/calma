@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/extensions/build_context_ext.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -43,7 +44,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         }
         if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
+            SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.error),
           );
         }
       },
@@ -58,7 +61,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 GestureDetector(
                   onTap: () => context.pop(),
                   child: Icon(Icons.arrow_back,
-                      color: AppColors.textPrimary, size: 24.w),
+                      color: context.colorOnSurface, size: 24.w),
                 ),
                 SizedBox(height: 28.h),
                 Text(
@@ -67,7 +70,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     fontFamily: 'PlusJakartaSans',
                     fontSize: 28.sp,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: context.colorOnSurface,
                     height: 1.2,
                   ),
                 ),
@@ -77,7 +80,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   style: TextStyle(
                     fontFamily: 'PlusJakartaSans',
                     fontSize: 15.sp,
-                    color: AppColors.textSecondary,
+                    color: context.colorOnSurfaceVariant,
                     height: 1.5,
                   ),
                 ),

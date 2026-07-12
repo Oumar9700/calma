@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../di/injection_container.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
@@ -9,6 +12,17 @@ import '../../features/auth/presentation/pages/profile_setup_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/role_selection_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
+import '../../features/catalog/domain/repositories/dish_repository.dart';
+import '../../features/catalog/presentation/bloc/dish_bloc.dart';
+import '../../features/catalog/presentation/pages/add_edit_dish_page.dart';
+import '../../features/catalog/presentation/pages/dish_detail_page.dart';
+import '../../features/catalog/presentation/pages/vendor_shop_preview_page.dart';
+import '../../features/explore/presentation/bloc/explore_bloc.dart';
+import '../../features/explore/presentation/pages/explore_page.dart';
+import '../../features/explore/presentation/pages/vendor_profile_page.dart';
+import '../../features/favorites/presentation/bloc/favorites_bloc.dart';
+import '../../features/favorites/presentation/pages/favorites_page.dart';
+import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/edit_profile_page.dart';
 import '../../features/settings/presentation/pages/role_change_page.dart';
@@ -61,80 +75,171 @@ GoRouter buildRouter(AuthBloc authBloc) {
       return null;
     },
     routes: [
+      // ── Auth routes ──────────────────────────────────────────────────────
       GoRoute(
         path: AppRoutes.splash,
-        builder: (context, state) => const SplashPage(),
+        builder: (_, __) => const SplashPage(),
       ),
       GoRoute(
         path: AppRoutes.onboarding,
-        builder: (context, state) => const OnboardingPage(),
+        builder: (_, __) => const OnboardingPage(),
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const LoginPage(),
+        builder: (_, __) => const LoginPage(),
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (context, state) => const RegisterPage(),
+        builder: (_, __) => const RegisterPage(),
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,
-        builder: (context, state) => const ForgotPasswordPage(),
+        builder: (_, __) => const ForgotPasswordPage(),
       ),
       GoRoute(
         path: AppRoutes.roleSelection,
-        builder: (context, state) => const RoleSelectionPage(),
+        builder: (_, __) => const RoleSelectionPage(),
       ),
       GoRoute(
         path: AppRoutes.profileSetup,
-        builder: (context, state) => const ProfileSetupPage(),
+        builder: (_, __) => const ProfileSetupPage(),
       ),
+
+      // ── Vendor profile (public, hors shell) ──────────────────────────────
+      GoRoute(
+        path: '/vendor/:vendorId',
+        builder: (_, state) => RepositoryProvider.value(
+          value: sl<AuthRepository>(),
+          child: RepositoryProvider.value(
+            value: sl<DishRepository>(),
+            child: BlocProvider(
+              create: (_) => sl<FavoritesBloc>(),
+              child: VendorProfilePage(
+                vendorId: state.pathParameters['vendorId']!,
+              ),
+            ),
+          ),
+        ),
+      ),
+
+      // ── Shell (bottom nav) ───────────────────────────────────────────────
       ShellRoute(
         navigatorKey: shellNavigatorKey,
-        builder: (context, state, child) => AppShell(child: child),
+        builder: (context, state, child) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => sl<DishBloc>()),
+            BlocProvider(create: (_) => sl<ExploreBloc>()),
+            BlocProvider(create: (_) => sl<FavoritesBloc>()),
+            RepositoryProvider.value(value: sl<DishRepository>()),
+            RepositoryProvider.value(value: sl<AuthRepository>()),
+          ],
+          child: AppShell(child: child),
+        ),
         routes: [
           GoRoute(
             path: AppRoutes.home,
-            builder: (context, state) =>
-                const _PlaceholderPage(label: 'Accueil', icon: Icons.home_outlined),
+            builder: (_, __) => const HomePage(),
           ),
           GoRoute(
             path: AppRoutes.explore,
-            builder: (context, state) =>
-                const _PlaceholderPage(label: 'Explorer', icon: Icons.search_outlined),
+            builder: (_, __) => const ExplorePage(),
           ),
           GoRoute(
             path: AppRoutes.orders,
-            builder: (context, state) =>
-                const _PlaceholderPage(label: 'Commandes', icon: Icons.receipt_long_outlined),
+            builder: (_, __) => const _PlaceholderPage(
+              label: 'Commandes',
+              icon: Icons.receipt_long_outlined,
+            ),
           ),
           GoRoute(
             path: AppRoutes.posts,
-            builder: (context, state) =>
-                const _PlaceholderPage(label: 'Publications', icon: Icons.forum_outlined),
+            builder: (_, __) => const _PlaceholderPage(
+              label: 'Publications',
+              icon: Icons.forum_outlined,
+            ),
           ),
           GoRoute(
             path: AppRoutes.profile,
-            builder: (context, state) => const ProfilePage(),
+            builder: (_, __) => const ProfilePage(),
           ),
+
+          // ── Settings ───────────────────────────────────────────────────
           GoRoute(
             path: AppRoutes.settings,
-            builder: (context, state) => const SettingsPage(),
+            builder: (_, __) => const SettingsPage(),
             routes: [
               GoRoute(
                 path: 'profile',
-                builder: (context, state) => const EditProfilePage(),
+                builder: (_, __) => const EditProfilePage(),
               ),
               GoRoute(
                 path: 'theme',
-                builder: (context, state) =>
-                    const ThemeCustomizationPage(),
+                builder: (_, __) => const ThemeCustomizationPage(),
               ),
               GoRoute(
                 path: 'role',
-                builder: (context, state) => const RoleChangePage(),
+                builder: (_, __) => const RoleChangePage(),
               ),
             ],
+          ),
+
+          // ── Vendor routes (inside shell) ───────────────────────────────
+          GoRoute(
+            path: AppRoutes.vendorAddDish,
+            builder: (_, __) => const AddEditDishPage(),
+          ),
+          GoRoute(
+            path: '/app/vendor/dishes/:dishId/edit',
+            builder: (context, state) {
+              final dishId = state.pathParameters['dishId']!;
+              return FutureBuilder(
+                future: sl<DishRepository>().getDish(dishId),
+                builder: (ctx, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  return AddEditDishPage(dish: snap.data);
+                },
+              );
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.vendorShopPreview,
+            builder: (_, __) => const VendorShopPreviewPage(),
+          ),
+
+          // ── Dish detail (buyer) ───────────────────────────────────────
+          GoRoute(
+            path: AppRoutes.dishDetail,
+            builder: (context, state) {
+              final dishId = state.pathParameters['dishId']!;
+              return FutureBuilder(
+                future: sl<DishRepository>().getDish(dishId),
+                builder: (ctx, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  final dish = snap.data;
+                  if (dish == null) {
+                    return Scaffold(
+                      appBar: AppBar(),
+                      body: const Center(child: Text('Plat introuvable')),
+                    );
+                  }
+                  return DishDetailPage(dish: dish);
+                },
+              );
+            },
+          ),
+
+          // ── Favorites ─────────────────────────────────────────────────
+          GoRoute(
+            path: '/app/favorites',
+            builder: (_, __) => const FavoritesPage(),
           ),
         ],
       ),
@@ -160,22 +265,22 @@ class _PlaceholderPage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 48, color: Theme.of(context).colorScheme.outlineVariant),
+            Icon(icon,
+                size: 48,
+                color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 12),
             Text(
               label,
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
             const SizedBox(height: 4),
             Text(
-              'Disponible en Phase 2',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: Theme.of(context).colorScheme.outlineVariant),
+              'Disponible en Phase 3',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
             ),
           ],
         ),

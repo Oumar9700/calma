@@ -72,6 +72,11 @@ class ProfilePage extends StatelessWidget {
                 title: 'Activité',
                 items: [
                   _ProfileItem(
+                    icon: Icons.favorite_outline,
+                    label: 'Mes favoris',
+                    onTap: () => context.push('/app/favorites'),
+                  ),
+                  _ProfileItem(
                     icon: Icons.receipt_long_outlined,
                     label: 'Mes commandes',
                     onTap: () => context.go(AppRoutes.orders),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/extensions/build_context_ext.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -103,7 +104,7 @@ class _NavBarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.primary : AppColors.textTertiary;
+    final color = isActive ? context.colorPrimary : AppColors.textTertiary;
 
     return GestureDetector(
       onTap: onTap,

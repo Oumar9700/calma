@@ -60,6 +60,8 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   injectable_generator: ^2.7.0
   build_runner: ^2.4.15
+  bloc_test: ^9.1.7
+  mocktail: ^1.0.4
 
 flutter:
   uses-material-design: true

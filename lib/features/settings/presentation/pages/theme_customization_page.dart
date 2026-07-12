@@ -269,7 +269,7 @@ class _ColorGrid extends StatelessWidget {
       runSpacing: 12.h,
       children: presets.map((preset) {
         final isSelected =
-            preset.color.value == selected.value;
+            preset.color.toARGB32() == selected.toARGB32();
         return GestureDetector(
           onTap: () => onSelect(preset.color),
           child: Column(

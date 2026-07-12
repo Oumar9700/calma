@@ -22,7 +22,7 @@ class ThemePrimaryColorChanged extends ThemeEvent {
   final Color color;
   const ThemePrimaryColorChanged(this.color);
   @override
-  List<Object?> get props => [color.value];
+  List<Object?> get props => [color.toARGB32()];
 }
 
 // Alias gardé pour ne pas casser le code existant

@@ -105,6 +105,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     });
     try {
       final url = await _storage.uploadAvatar(_user!.uid, _avatarFile!);
+      if (!mounted) return;
       context.read<AuthBloc>().add(ProfileUpdateRequested(photoUrl: url));
     } catch (e) {
       if (mounted) {
@@ -130,6 +131,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     });
     try {
       final url = await _storage.uploadCoverPhoto(_user!.uid, _coverFile!);
+      if (!mounted) return;
       context.read<AuthBloc>().add(ProfileUpdateRequested(coverPhotoUrl: url));
     } catch (e) {
       if (mounted) {

@@ -161,6 +161,8 @@ class FirebaseAuthDataSource {
     return _fetchUserDocument(user.uid);
   }
 
+  Future<AppUser?> getUserById(String uid) => _fetchUserDocument(uid);
+
   Future<void> deleteAccount() async {
     final user = _auth.currentUser;
     if (user == null) throw const UserNotFoundFailure();

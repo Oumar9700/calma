@@ -23,6 +23,7 @@ abstract class AppRoutes {
   static const String vendorDishes = '/app/vendor/dishes';
   static const String vendorAddDish = '/app/vendor/dishes/add';
   static const String vendorEditDish = '/app/vendor/dishes/:dishId/edit';
+  static const String vendorShopPreview = '/app/vendor/preview';
   static const String vendorOrders = '/app/vendor/orders';
   static const String vendorSchedule = '/app/vendor/schedule';
 

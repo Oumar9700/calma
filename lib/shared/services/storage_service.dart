@@ -36,4 +36,20 @@ class StorageService {
       await _storage.ref('users/$uid/cover.jpg').delete();
     } catch (_) {}
   }
+
+  Future<String> uploadDishPhoto(String vendorId, String dishId, File file) async {
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final ref = _storage.ref('vendors/$vendorId/dishes/$dishId/$ts.jpg');
+    final task = await ref.putFile(
+      file,
+      SettableMetadata(contentType: 'image/jpeg'),
+    );
+    return await task.ref.getDownloadURL();
+  }
+
+  Future<void> deleteDishPhoto(String url) async {
+    try {
+      await _storage.refFromURL(url).delete();
+    } catch (_) {}
+  }
 }

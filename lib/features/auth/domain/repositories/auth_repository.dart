@@ -31,6 +31,7 @@ abstract class AuthRepository {
     String? coverPhotoUrl,
   });
   Future<AppUser?> getCurrentUser();
+  Future<AppUser?> getUserById(String uid);
   Future<void> deleteAccount();
   Future<AppUser> signInWithGoogle();
 }

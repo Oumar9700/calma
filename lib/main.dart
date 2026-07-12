@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,17 +18,27 @@ import 'shared/blocs/theme/theme_event.dart';
 import 'shared/blocs/theme/theme_state.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
 
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await setupInjection();
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
 
-  runApp(const CalmaApp());
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await setupInjection();
+
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      debugPrint('STACK: ${details.stack}');
+    };
+    runApp(const CalmaApp());
+  }, (error, stack) {
+    debugPrint('UNCAUGHT: $error');
+    debugPrint(stack.toString());
+  });
 }
 
 class CalmaApp extends StatefulWidget {

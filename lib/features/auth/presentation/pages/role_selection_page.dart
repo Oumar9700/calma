@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/extensions/build_context_ext.dart';
 import '../../../../core/router/app_routes.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../features/auth/domain/entities/user_role.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -133,11 +132,11 @@ class _RoleCard extends StatelessWidget {
         padding: EdgeInsets.all(20.w),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.primary.withValues(alpha: 0.08)
+              ? context.colorPrimary.withValues(alpha: 0.08)
               : context.colorSurface,
           borderRadius: BorderRadius.circular(AppSpacing.borderRadiusLg),
           border: Border.all(
-            color: selected ? AppColors.primary : context.colorBorder,
+            color: selected ? context.colorPrimary : context.colorBorder,
             width: selected ? 2 : 1,
           ),
         ),
@@ -148,7 +147,7 @@ class _RoleCard extends StatelessWidget {
               height: 52.w,
               decoration: BoxDecoration(
                 color: selected
-                    ? AppColors.primary.withValues(alpha: 0.12)
+                    ? context.colorPrimary.withValues(alpha: 0.12)
                     : context.colorSurfaceContainerHighest,
                 borderRadius:
                     BorderRadius.circular(AppSpacing.borderRadiusMd),
@@ -157,7 +156,7 @@ class _RoleCard extends StatelessWidget {
                 icon,
                 size: 26.w,
                 color: selected
-                    ? AppColors.primary
+                    ? context.colorPrimary
                     : context.colorOnSurfaceVariant,
               ),
             ),
@@ -188,7 +187,7 @@ class _RoleCard extends StatelessWidget {
               ),
             ),
             if (selected)
-              Icon(Icons.check_circle, color: AppColors.primary, size: 22.w),
+              Icon(Icons.check_circle, color: context.colorPrimary, size: 22.w),
           ],
         ),
       ),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/extensions/build_context_ext.dart';
 import '../../../../core/router/app_routes.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/app_button.dart';
 
@@ -54,7 +54,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -67,7 +67,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   style: TextStyle(
                     fontFamily: 'PlusJakartaSans',
                     fontSize: 14.sp,
-                    color: AppColors.textSecondary,
+                    color: context.colorOnSurfaceVariant,
                   ),
                 ),
               ),
@@ -77,10 +77,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 controller: _controller,
                 onPageChanged: (i) => setState(() => _currentPage = i),
                 itemCount: _slides.length,
-                itemBuilder: (context, index) => _SlideView(
-                  slide: _slides[index],
-                  index: index,
-                ),
+                itemBuilder: (context, index) =>
+                    _SlideView(slide: _slides[index], index: index),
               ),
             ),
             Padding(
@@ -98,8 +96,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         height: 8.w,
                         decoration: BoxDecoration(
                           color: _currentPage == i
-                              ? AppColors.primary
-                              : AppColors.border,
+                              ? context.colorPrimary
+                              : context.colorBorder,
                           borderRadius: BorderRadius.circular(100),
                         ),
                       ),
@@ -121,7 +119,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         fontFamily: 'PlusJakartaSans',
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
+                        color: context.colorOnSurfaceVariant,
                       ),
                     ),
                   ),
@@ -162,9 +160,13 @@ class _SlideView extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              [Icons.restaurant_menu, Icons.storefront, Icons.shopping_bag_outlined][index],
+              [
+                Icons.restaurant_menu,
+                Icons.storefront,
+                Icons.shopping_bag_outlined
+              ][index],
               size: 80.w,
-              color: AppColors.primary,
+              color: context.colorPrimary,
             ),
           ),
           SizedBox(height: 40.h),
@@ -174,7 +176,7 @@ class _SlideView extends StatelessWidget {
               fontFamily: 'PlusJakartaSans',
               fontSize: 24.sp,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: context.colorOnSurface,
               height: 1.25,
             ),
             textAlign: TextAlign.center,
@@ -186,7 +188,7 @@ class _SlideView extends StatelessWidget {
               fontFamily: 'PlusJakartaSans',
               fontSize: 15.sp,
               fontWeight: FontWeight.w400,
-              color: AppColors.textSecondary,
+              color: context.colorOnSurfaceVariant,
               height: 1.6,
             ),
             textAlign: TextAlign.center,

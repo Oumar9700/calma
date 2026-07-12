@@ -19,5 +19,5 @@ class ThemeState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [mode, primaryColor.value];
+  List<Object?> get props => [mode, primaryColor.toARGB32()];
 }

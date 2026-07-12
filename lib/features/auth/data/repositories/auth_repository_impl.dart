@@ -78,6 +78,9 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<AppUser?> getCurrentUser() => _dataSource.getCurrentUser();
 
   @override
+  Future<AppUser?> getUserById(String uid) => _dataSource.getUserById(uid);
+
+  @override
   Future<void> deleteAccount() => _dataSource.deleteAccount();
 
   @override
