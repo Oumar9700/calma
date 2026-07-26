@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../catalog/domain/repositories/dish_repository.dart';
+import '../../domain/entities/explore_filter.dart';
 import 'explore_event.dart';
 import 'explore_state.dart';
 
@@ -22,6 +23,8 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
         availableToday: event.filter.availableToday,
         minRating: event.filter.minRating,
         searchQuery: event.filter.searchQuery,
+        availableDay: event.filter.availableDay,
+        orderType: _orderTypeString(event.filter.orderType),
       );
       emit(ExploreLoaded(dishes: dishes, filter: event.filter));
     } catch (e) {
@@ -42,6 +45,8 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
         availableToday: event.filter.availableToday,
         minRating: event.filter.minRating,
         searchQuery: event.filter.searchQuery,
+        availableDay: event.filter.availableDay,
+        orderType: _orderTypeString(event.filter.orderType),
       );
       emit(ExploreLoaded(
         dishes: dishes,
@@ -65,5 +70,18 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
     Emitter<ExploreState> emit,
   ) async {
     add(const LoadDishes());
+  }
+
+  String? _orderTypeString(OrderTypeFilter? filter) {
+    switch (filter) {
+      case OrderTypeFilter.direct:
+        return 'direct';
+      case OrderTypeFilter.preorder:
+        return 'preorder';
+      case OrderTypeFilter.both:
+        return 'both';
+      case null:
+        return null;
+    }
   }
 }

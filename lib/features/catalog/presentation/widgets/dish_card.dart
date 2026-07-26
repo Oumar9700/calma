@@ -10,6 +10,7 @@ class DishCard extends StatelessWidget {
   final VoidCallback? onTap;
   final Widget? trailing;
   final bool showStatus;
+  final bool compact;
 
   const DishCard({
     super.key,
@@ -17,6 +18,7 @@ class DishCard extends StatelessWidget {
     this.onTap,
     this.trailing,
     this.showStatus = false,
+    this.compact = false,
   });
 
   @override
@@ -39,7 +41,7 @@ class DishCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Photo(dish: dish, showStatus: showStatus),
+            _Photo(dish: dish, showStatus: showStatus, compact: compact),
             Padding(
               padding: EdgeInsets.all(12.w),
               child: Column(
@@ -118,10 +120,12 @@ class DishCard extends StatelessWidget {
                       if (trailing != null) trailing!,
                     ],
                   ),
-                  if (dish.availableDays.isNotEmpty) ...[
+                  if (!compact && dish.availableDays.isNotEmpty) ...[
                     SizedBox(height: 6.h),
                     _DaysRow(days: dish.availableDays),
                   ],
+                  SizedBox(height: 6.h),
+                  _AvailabilityBadges(dish: dish),
                 ],
               ),
             ),
@@ -135,7 +139,8 @@ class DishCard extends StatelessWidget {
 class _Photo extends StatelessWidget {
   final Dish dish;
   final bool showStatus;
-  const _Photo({required this.dish, required this.showStatus});
+  final bool compact;
+  const _Photo({required this.dish, required this.showStatus, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -146,16 +151,17 @@ class _Photo extends StatelessWidget {
           child: dish.photoUrls.isNotEmpty
               ? CachedNetworkImage(
                   imageUrl: dish.photoUrls.first,
-                  height: 140.h,
+                  height: compact ? 110.h : 140.h,
                   width: double.infinity,
                   fit: BoxFit.cover,
                   placeholder: (_, __) => Container(
-                    height: 140.h,
+                    height: compact ? 110.h : 140.h,
                     color: context.colorSurfaceContainerHighest,
                   ),
-                  errorWidget: (_, __, ___) => _PlaceholderImage(height: 140.h),
+                  errorWidget: (_, __, ___) =>
+                      _PlaceholderImage(height: compact ? 110.h : 140.h),
                 )
-              : _PlaceholderImage(height: 140.h),
+              : _PlaceholderImage(height: compact ? 110.h : 140.h),
         ),
         if (showStatus)
           Positioned(
@@ -216,6 +222,65 @@ class _PlaceholderImage extends StatelessWidget {
         Icons.restaurant_outlined,
         size: 40.w,
         color: context.colorBorder,
+      ),
+    );
+  }
+}
+
+class _AvailabilityBadges extends StatelessWidget {
+  final Dish dish;
+  const _AvailabilityBadges({required this.dish});
+
+  @override
+  Widget build(BuildContext context) {
+    final badges = <Widget>[];
+    if (dish.directOrderEnabled) {
+      badges.add(_Badge(
+        label: 'Direct',
+        icon: Icons.bolt,
+        color: context.colorPrimary,
+      ));
+    }
+    if (dish.preorderEnabled) {
+      badges.add(_Badge(
+        label: 'Précommande',
+        icon: Icons.schedule_outlined,
+        color: const Color(0xFF8B5CF6),
+      ));
+    }
+    if (badges.isEmpty) return const SizedBox.shrink();
+    return Wrap(spacing: 4.w, runSpacing: 4.h, children: badges);
+  }
+}
+
+class _Badge extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  const _Badge({required this.label, required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10.w, color: color),
+          SizedBox(width: 3.w),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }

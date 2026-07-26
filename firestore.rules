@@ -27,5 +27,75 @@ service cloud.firestore {
       allow update, delete: if request.auth != null
                              && resource.data.vendorId == request.auth.uid;
     }
+
+    // ── Commandes ──────────────────────────────────────────────────────────
+    match /orders/{orderId} {
+      // Lecture : acheteur ou vendeur concerné uniquement
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.buyerId ||
+        request.auth.uid == resource.data.vendorId
+      );
+
+      // Création : l'acheteur crée la commande avec son propre UID
+      allow create: if request.auth != null
+                    && request.resource.data.buyerId == request.auth.uid;
+
+      // Modification :
+      //   - l'acheteur peut mettre à jour sa propre commande
+      //     (annulation, upload capture paiement)
+      //   - le vendeur peut mettre à jour le statut des commandes qui le concernent
+      // Dans les deux cas, buyerId et vendorId ne peuvent pas être modifiés.
+      allow update: if request.auth != null
+                    && request.resource.data.buyerId == resource.data.buyerId
+                    && request.resource.data.vendorId == resource.data.vendorId
+                    && (
+                      request.auth.uid == resource.data.buyerId ||
+                      request.auth.uid == resource.data.vendorId
+                    );
+
+      // Suppression interdite — les commandes sont des enregistrements permanents
+      allow delete: if false;
+    }
+
+    // ── Slots de précommande ────────────────────────────────────────────────
+    match /preorder_slots/{slotId} {
+      // Lecture : tout utilisateur connecté (acheteur cherche des créneaux disponibles)
+      allow read: if request.auth != null;
+
+      // Création : le vendeur crée ses propres créneaux
+      allow create: if request.auth != null
+                    && request.resource.data.vendorId == request.auth.uid;
+
+      // Modification/suppression : vendeur propriétaire uniquement
+      // Exception : un acheteur peut incrémenter bookedQuantity pour réserver
+      allow update: if request.auth != null && (
+        resource.data.vendorId == request.auth.uid
+        || (
+          // Acheteur peut seulement incrémenter bookedQuantity (réservation)
+          request.auth.uid != resource.data.vendorId
+          && request.resource.data.vendorId == resource.data.vendorId
+          && request.resource.data.dishId == resource.data.dishId
+          && request.resource.data.bookedQuantity == resource.data.bookedQuantity + 1
+        )
+      );
+
+      allow delete: if request.auth != null
+                    && resource.data.vendorId == request.auth.uid;
+    }
+
+    // ── Signalements de problèmes ──────────────────────────────────────────
+    match /order_reports/{reportId} {
+      // Création : acheteur authentifié
+      allow create: if request.auth != null
+                    && request.resource.data.buyerId == request.auth.uid;
+      // Lecture : acheteur ou vendeur concerné + admin (futur)
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.buyerId ||
+        request.auth.uid == resource.data.vendorId
+      );
+      // Pas de modification ni suppression
+      allow update, delete: if false;
+    }
+
   }
 }

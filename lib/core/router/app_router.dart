@@ -12,6 +12,7 @@ import '../../features/auth/presentation/pages/profile_setup_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/role_selection_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
+import '../../features/catalog/domain/entities/dish.dart';
 import '../../features/catalog/domain/repositories/dish_repository.dart';
 import '../../features/catalog/presentation/bloc/dish_bloc.dart';
 import '../../features/catalog/presentation/pages/add_edit_dish_page.dart';
@@ -24,6 +25,15 @@ import '../../features/favorites/presentation/bloc/favorites_bloc.dart';
 import '../../features/favorites/presentation/pages/favorites_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/orders/presentation/bloc/order_bloc.dart';
+import '../../features/orders/presentation/bloc/vendor_order_bloc.dart';
+import '../../features/orders/presentation/pages/buyer_order_detail_page.dart';
+import '../../features/orders/presentation/pages/buyer_orders_page.dart';
+import '../../features/orders/presentation/pages/order_confirmation_page.dart';
+import '../../features/orders/presentation/pages/order_create_page.dart';
+import '../../features/orders/presentation/pages/preorder_create_page.dart';
+import '../../features/orders/presentation/pages/vendor_create_slot_page.dart';
+import '../../features/orders/presentation/pages/vendor_orders_page.dart';
 import '../../features/settings/presentation/pages/edit_profile_page.dart';
 import '../../features/settings/presentation/pages/role_change_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
@@ -130,6 +140,8 @@ GoRouter buildRouter(AuthBloc authBloc) {
             BlocProvider(create: (_) => sl<DishBloc>()),
             BlocProvider(create: (_) => sl<ExploreBloc>()),
             BlocProvider(create: (_) => sl<FavoritesBloc>()),
+            BlocProvider<OrderBloc>(create: (_) => sl<OrderBloc>()),
+            BlocProvider<VendorOrderBloc>(create: (_) => sl<VendorOrderBloc>()),
             RepositoryProvider.value(value: sl<DishRepository>()),
             RepositoryProvider.value(value: sl<AuthRepository>()),
           ],
@@ -146,10 +158,7 @@ GoRouter buildRouter(AuthBloc authBloc) {
           ),
           GoRoute(
             path: AppRoutes.orders,
-            builder: (_, __) => const _PlaceholderPage(
-              label: 'Commandes',
-              icon: Icons.receipt_long_outlined,
-            ),
+            builder: (_, __) => const _RoleAwareOrdersPage(),
           ),
           GoRoute(
             path: AppRoutes.posts,
@@ -241,10 +250,88 @@ GoRouter buildRouter(AuthBloc authBloc) {
             path: '/app/favorites',
             builder: (_, __) => const FavoritesPage(),
           ),
+
+          // ── Orders (buyer) ────────────────────────────────────────────
+          GoRoute(
+            path: AppRoutes.orderDetail,
+            builder: (_, state) {
+              final orderId = state.pathParameters['orderId']!;
+              return BuyerOrderDetailPage(orderId: orderId);
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.orderConfirmation,
+            builder: (_, state) {
+              final orderId = state.pathParameters['orderId']!;
+              return OrderConfirmationPage(orderId: orderId);
+            },
+          ),
+
+          // ── Vendor orders / schedule ──────────────────────────────────
+          GoRoute(
+            path: AppRoutes.vendorOrders,
+            builder: (_, __) => const VendorOrdersPage(initialTab: 0),
+          ),
+          GoRoute(
+            path: AppRoutes.vendorSchedule,
+            builder: (_, __) => const VendorOrdersPage(initialTab: 1),
+          ),
+          GoRoute(
+            path: AppRoutes.vendorCreateSlot,
+            builder: (_, __) => const VendorCreateSlotPage(),
+          ),
         ],
+      ),
+
+      // ── Order create (outside shell to avoid bottom nav) ──────────────
+      GoRoute(
+        path: AppRoutes.orderCreate,
+        builder: (_, state) {
+          final dish = state.extra as Dish?;
+          if (dish == null) {
+            return const Scaffold(
+              body: Center(child: Text('Plat introuvable')),
+            );
+          }
+          return BlocProvider<OrderBloc>(
+            create: (_) => sl<OrderBloc>(),
+            child: OrderCreatePage(dish: dish),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.preorderCreate,
+        builder: (_, state) {
+          final dish = state.extra as Dish?;
+          if (dish == null) {
+            return const Scaffold(
+              body: Center(child: Text('Plat introuvable')),
+            );
+          }
+          return BlocProvider<OrderBloc>(
+            create: (_) => sl<OrderBloc>(),
+            child: PreorderCreatePage(dish: dish),
+          );
+        },
       ),
     ],
   );
+}
+
+class _RoleAwareOrdersPage extends StatelessWidget {
+  const _RoleAwareOrdersPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        if (state is Authenticated && state.user.isVendor) {
+          return const VendorOrdersPage();
+        }
+        return const BuyerOrdersPage();
+      },
+    );
+  }
 }
 
 class _AuthStateNotifier extends ChangeNotifier {

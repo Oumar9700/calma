@@ -307,6 +307,31 @@ class _ActiveFiltersRow extends StatelessWidget {
                 ),
           ));
         }
+        if (filter.availableDay != null) {
+          final abbrev = {
+            'lundi': 'Lun', 'mardi': 'Mar', 'mercredi': 'Mer',
+            'jeudi': 'Jeu', 'vendredi': 'Ven', 'samedi': 'Sam', 'dimanche': 'Dim',
+          };
+          chips.add(_FilterChip(
+            label: abbrev[filter.availableDay] ?? filter.availableDay!,
+            onRemove: () => context.read<ExploreBloc>().add(
+                  UpdateFilter(filter.copyWith(clearDay: true)),
+                ),
+          ));
+        }
+        if (filter.orderType != null) {
+          final labels = {
+            OrderTypeFilter.direct: 'Direct',
+            OrderTypeFilter.preorder: 'Préco',
+            OrderTypeFilter.both: 'Direct & Préco',
+          };
+          chips.add(_FilterChip(
+            label: labels[filter.orderType]!,
+            onRemove: () => context.read<ExploreBloc>().add(
+                  UpdateFilter(filter.copyWith(clearOrderType: true)),
+                ),
+          ));
+        }
 
         return SizedBox(
           height: 36.h,
@@ -377,6 +402,7 @@ class _GridView extends StatelessWidget {
         final dish = dishes[index];
         return DishCard(
           dish: dish,
+          compact: true,
           onTap: () => context.push(
             AppRoutes.dishDetail.replaceFirst(':dishId', dish.id),
           ),

@@ -32,6 +32,8 @@ class DishRepositoryImpl implements DishRepository {
     bool availableToday = false,
     double? minRating,
     String? searchQuery,
+    String? availableDay,
+    String? orderType,
   }) async {
     var result = await _dataSource.fetchActiveDishes();
     if (countryOfOrigin != null) {
@@ -42,6 +44,23 @@ class DishRepositoryImpl implements DishRepository {
     }
     if (availableToday) {
       result = result.where((d) => d.isAvailableToday).toList();
+    }
+    if (availableDay != null) {
+      result = result.where((d) => d.availableDays.contains(availableDay)).toList();
+    }
+    if (orderType != null) {
+      result = result.where((d) {
+        switch (orderType) {
+          case 'direct':
+            return d.directOrderEnabled;
+          case 'preorder':
+            return d.preorderEnabled;
+          case 'both':
+            return d.directOrderEnabled && d.preorderEnabled;
+          default:
+            return true;
+        }
+      }).toList();
     }
     if (minRating != null) {
       result = result.where((d) => d.averageRating >= minRating).toList();

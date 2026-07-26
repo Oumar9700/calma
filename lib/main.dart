@@ -34,6 +34,9 @@ void main() async {
       FlutterError.presentError(details);
       debugPrint('STACK: ${details.stack}');
     };
+
+    print(">>>>>>>> INIT STATE");
+    
     runApp(const CalmaApp());
   }, (error, stack) {
     debugPrint('UNCAUGHT: $error');

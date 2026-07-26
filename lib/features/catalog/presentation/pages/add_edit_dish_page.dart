@@ -39,9 +39,11 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
   final _maxQtyCtrl = TextEditingController();
   final _countryCtrl = TextEditingController();
   final _regionCtrl = TextEditingController();
+  final _deadlineDaysCtrl = TextEditingController();
 
   DishCategory _category = DishCategory.mainDish;
   bool _preorderEnabled = false;
+  bool _directOrderEnabled = true;
   bool _isActive = true;
   List<String> _availableDays = [];
   List<String> _photoUrls = [];
@@ -64,6 +66,8 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
       _regionCtrl.text = d.region ?? '';
       _category = d.category;
       _preorderEnabled = d.preorderEnabled;
+      _deadlineDaysCtrl.text = d.preorderDeadlineDays?.toString() ?? '';
+      _directOrderEnabled = d.directOrderEnabled;
       _isActive = d.isActive;
       _availableDays = List.from(d.availableDays);
       _photoUrls = List.from(d.photoUrls);
@@ -92,6 +96,7 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
     _maxQtyCtrl.dispose();
     _countryCtrl.dispose();
     _regionCtrl.dispose();
+    _deadlineDaysCtrl.dispose();
     _actionSub?.cancel();
     super.dispose();
   }
@@ -159,6 +164,10 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
       dailyMaxQuantity:
           _maxQtyCtrl.text.isEmpty ? null : int.tryParse(_maxQtyCtrl.text),
       preorderEnabled: _preorderEnabled,
+      preorderDeadlineDays: _preorderEnabled && _deadlineDaysCtrl.text.trim().isNotEmpty
+          ? int.tryParse(_deadlineDaysCtrl.text.trim())
+          : null,
+      directOrderEnabled: _directOrderEnabled,
       isActive: _isActive,
       availableDays: _availableDays,
       createdAt: widget.dish?.createdAt ?? DateTime.now(),
@@ -299,25 +308,34 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
                     keyboardType: TextInputType.number,
                   ),
                   SizedBox(height: 16.h),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _SwitchRow(
-                          label: 'Précommande activée',
-                          value: _preorderEnabled,
-                          onChanged: (v) =>
-                              setState(() => _preorderEnabled = v),
-                        ),
-                      ),
-                      SizedBox(width: 12.w),
-                      Expanded(
-                        child: _SwitchRow(
-                          label: 'Plat actif',
-                          value: _isActive,
-                          onChanged: (v) => setState(() => _isActive = v),
-                        ),
-                      ),
-                    ],
+                  _SwitchRow(
+                    label: 'Commande directe activée',
+                    value: _directOrderEnabled,
+                    onChanged: (v) => setState(() => _directOrderEnabled = v),
+                  ),
+                  SizedBox(height: 12.h),
+                  _SwitchRow(
+                    label: 'Précommande activée',
+                    value: _preorderEnabled,
+                    onChanged: (v) => setState(() {
+                      _preorderEnabled = v;
+                      if (!v) _deadlineDaysCtrl.clear();
+                    }),
+                  ),
+                  if (_preorderEnabled) ...[
+                    SizedBox(height: 10.h),
+                    AppTextField(
+                      label: 'Délai de réservation (jours avant livraison)',
+                      hint: 'Ex: 1 = commander au moins 1 jour avant',
+                      controller: _deadlineDaysCtrl,
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                  SizedBox(height: 12.h),
+                  _SwitchRow(
+                    label: 'Plat actif',
+                    value: _isActive,
+                    onChanged: (v) => setState(() => _isActive = v),
                   ),
                   SizedBox(height: 24.h),
                   _SectionLabel('Jours de vente *'),

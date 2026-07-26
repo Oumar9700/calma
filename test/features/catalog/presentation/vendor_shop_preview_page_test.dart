@@ -1,4 +1,3 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:calma/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:calma/features/auth/presentation/bloc/auth_state.dart';
 import 'package:calma/features/catalog/presentation/bloc/dish_action_message.dart';

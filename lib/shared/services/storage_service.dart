@@ -52,4 +52,13 @@ class StorageService {
       await _storage.refFromURL(url).delete();
     } catch (_) {}
   }
+
+  Future<String> uploadOrderCapture(String orderId, File file) async {
+    final ref = _storage.ref('orders/$orderId/capture.jpg');
+    final task = await ref.putFile(
+      file,
+      SettableMetadata(contentType: 'image/jpeg'),
+    );
+    return await task.ref.getDownloadURL();
+  }
 }

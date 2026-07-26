@@ -13,6 +13,8 @@ abstract class DishRepository {
     bool availableToday = false,
     double? minRating,
     String? searchQuery,
+    String? availableDay,
+    String? orderType,
   });
   Future<List<Dish>> fetchVendorDishes(String vendorId);
   Future<Dish?> getDish(String dishId);

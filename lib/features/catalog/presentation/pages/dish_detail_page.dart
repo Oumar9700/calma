@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/extensions/build_context_ext.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../domain/entities/dish.dart';
 
 class DishDetailPage extends StatelessWidget {
@@ -64,7 +65,9 @@ class DishDetailPage extends StatelessWidget {
                   if (dish.preorderEnabled) ...[
                     _InfoRow(
                       icon: Icons.schedule_outlined,
-                      label: 'Précommande disponible',
+                      label: dish.preorderDeadlineDays != null
+                          ? 'Précommande — ${dish.preorderDeadlineDays} jour${dish.preorderDeadlineDays! > 1 ? 's' : ''} à l\'avance minimum'
+                          : 'Précommande disponible',
                       color: context.colorPrimary,
                     ),
                     SizedBox(height: 8.h),
@@ -233,46 +236,122 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canOrderToday = dish.isAvailableToday && dish.directOrderEnabled;
+    final canPreorder = dish.preorderEnabled;
+
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
-        child: dish.isAvailableToday
-            ? FilledButton(
-                onPressed: () {},
-                style: FilledButton.styleFrom(
-                  backgroundColor: context.colorPrimary,
-                  minimumSize: Size(double.infinity, 52.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14.r),
-                  ),
-                ),
-                child: Text(
-                  'Commander — ${dish.price.toStringAsFixed(2)} €',
-                  style: TextStyle(
-                    fontFamily: 'PlusJakartaSans',
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              )
-            : Container(
-                width: double.infinity,
-                height: 52.h,
-                decoration: BoxDecoration(
-                  color: context.colorSurfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(14.r),
-                ),
-                child: Center(
-                  child: Text(
-                    'Non disponible aujourd\'hui',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: context.colorOnSurfaceVariant,
-                      fontWeight: FontWeight.w500,
+        child: canOrderToday
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FilledButton(
+                    onPressed: () => context.push(
+                      AppRoutes.orderCreate
+                          .replaceFirst(':dishId', dish.id),
+                      extra: dish,
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: context.colorPrimary,
+                      minimumSize: Size(double.infinity, 52.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                    ),
+                    child: Text(
+                      'Commander — ${dish.price.toStringAsFixed(2)} €',
+                      style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                ),
+                  if (canPreorder) ...[
+                    SizedBox(height: 8.h),
+                    OutlinedButton(
+                      onPressed: () => context.push(
+                        AppRoutes.preorderCreate
+                            .replaceFirst(':dishId', dish.id),
+                        extra: dish,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: Size(double.infinity, 48.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14.r),
+                        ),
+                        side: BorderSide(
+                            color: context.colorPrimary.withOpacity(0.6)),
+                      ),
+                      child: Text(
+                        'Précommander',
+                        style: TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: context.colorPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!dish.directOrderEnabled && dish.preorderEnabled)
+                    // Plat uniquement en précommande
+                    const SizedBox.shrink()
+                  else
+                    Container(
+                      width: double.infinity,
+                      height: 52.h,
+                      decoration: BoxDecoration(
+                        color: context.colorSurfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                      child: Center(
+                        child: Text(
+                          dish.directOrderEnabled
+                              ? 'Non disponible aujourd\'hui'
+                              : 'Commande directe non disponible',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: context.colorOnSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (canPreorder) ...[
+                    SizedBox(height: 8.h),
+                    FilledButton(
+                      onPressed: () => context.push(
+                        AppRoutes.preorderCreate
+                            .replaceFirst(':dishId', dish.id),
+                        extra: dish,
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: context.colorPrimary,
+                        minimumSize: Size(double.infinity, 48.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14.r),
+                        ),
+                      ),
+                      child: Text(
+                        'Précommander',
+                        style: TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
       ),
     );

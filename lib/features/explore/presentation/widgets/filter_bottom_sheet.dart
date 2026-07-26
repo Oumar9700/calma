@@ -4,6 +4,11 @@ import '../../../../core/extensions/build_context_ext.dart';
 import '../../../catalog/domain/entities/dish_category.dart';
 import '../../domain/entities/explore_filter.dart';
 
+const _kDays = [
+  'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche',
+];
+const _kDayLabels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
 class FilterBottomSheet extends StatefulWidget {
   final ExploreFilter initial;
   final ValueChanged<ExploreFilter> onApply;
@@ -250,6 +255,79 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               ),
             ],
           ),
+          SizedBox(height: 20.h),
+          _Label('Disponible ce jour'),
+          SizedBox(height: 8.h),
+          Wrap(
+            spacing: 6.w,
+            runSpacing: 6.h,
+            children: List.generate(_kDays.length, (i) {
+              final day = _kDays[i];
+              final isSelected = _filter.availableDay == day;
+              return GestureDetector(
+                onTap: () => setState(() => _filter = isSelected
+                    ? _filter.copyWith(clearDay: true)
+                    : _filter.copyWith(availableDay: day)),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? context.colorPrimary
+                        : context.colorSurfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(20.r),
+                    border: Border.all(
+                      color: isSelected ? context.colorPrimary : context.colorBorder,
+                    ),
+                  ),
+                  child: Text(
+                    _kDayLabels[i],
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : context.colorOnSurface,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+          SizedBox(height: 20.h),
+          _Label('Type de commande'),
+          SizedBox(height: 8.h),
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: [
+              _OrderTypeChip(
+                label: 'Commande directe',
+                icon: Icons.bolt_outlined,
+                value: OrderTypeFilter.direct,
+                selected: _filter.orderType,
+                onTap: (v) => setState(() => _filter = _filter.orderType == v
+                    ? _filter.copyWith(clearOrderType: true)
+                    : _filter.copyWith(orderType: v)),
+              ),
+              _OrderTypeChip(
+                label: 'Précommande',
+                icon: Icons.schedule_outlined,
+                value: OrderTypeFilter.preorder,
+                selected: _filter.orderType,
+                onTap: (v) => setState(() => _filter = _filter.orderType == v
+                    ? _filter.copyWith(clearOrderType: true)
+                    : _filter.copyWith(orderType: v)),
+              ),
+              _OrderTypeChip(
+                label: 'Les deux',
+                icon: Icons.swap_horiz_outlined,
+                value: OrderTypeFilter.both,
+                selected: _filter.orderType,
+                onTap: (v) => setState(() => _filter = _filter.orderType == v
+                    ? _filter.copyWith(clearOrderType: true)
+                    : _filter.copyWith(orderType: v)),
+              ),
+            ],
+          ),
           SizedBox(height: 24.h),
           SizedBox(
             width: double.infinity,
@@ -276,6 +354,62 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _OrderTypeChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final OrderTypeFilter value;
+  final OrderTypeFilter? selected;
+  final ValueChanged<OrderTypeFilter> onTap;
+
+  const _OrderTypeChip({
+    required this.label,
+    required this.icon,
+    required this.value,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = selected == value;
+    return GestureDetector(
+      onTap: () => onTap(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? context.colorPrimary
+              : context.colorSurfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(
+            color: isSelected ? context.colorPrimary : context.colorBorder,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14.w,
+              color: isSelected ? Colors.white : context.colorOnSurfaceVariant,
+            ),
+            SizedBox(width: 6.w),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w500,
+                color: isSelected ? Colors.white : context.colorOnSurface,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

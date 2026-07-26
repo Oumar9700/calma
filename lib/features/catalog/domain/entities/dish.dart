@@ -13,6 +13,8 @@ class Dish extends Equatable {
   final double price;
   final int? dailyMaxQuantity;
   final bool preorderEnabled;
+  final int? preorderDeadlineDays;
+  final bool directOrderEnabled;
   final int? prepTimeMinutes;
   final bool isActive;
   final double averageRating;
@@ -32,6 +34,8 @@ class Dish extends Equatable {
     required this.price,
     this.dailyMaxQuantity,
     this.preorderEnabled = false,
+    this.preorderDeadlineDays,
+    this.directOrderEnabled = true,
     this.prepTimeMinutes,
     this.isActive = true,
     this.averageRating = 0.0,
@@ -60,6 +64,8 @@ class Dish extends Equatable {
     double? price,
     int? dailyMaxQuantity,
     bool? preorderEnabled,
+    int? preorderDeadlineDays,
+    bool? directOrderEnabled,
     int? prepTimeMinutes,
     bool? isActive,
     double? averageRating,
@@ -79,6 +85,8 @@ class Dish extends Equatable {
       price: price ?? this.price,
       dailyMaxQuantity: dailyMaxQuantity ?? this.dailyMaxQuantity,
       preorderEnabled: preorderEnabled ?? this.preorderEnabled,
+      preorderDeadlineDays: preorderDeadlineDays ?? this.preorderDeadlineDays,
+      directOrderEnabled: directOrderEnabled ?? this.directOrderEnabled,
       prepTimeMinutes: prepTimeMinutes ?? this.prepTimeMinutes,
       isActive: isActive ?? this.isActive,
       averageRating: averageRating ?? this.averageRating,
@@ -92,7 +100,7 @@ class Dish extends Equatable {
   List<Object?> get props => [
         id, vendorId, name, countryOfOrigin, region, description,
         category, photoUrls, price, dailyMaxQuantity, preorderEnabled,
-        prepTimeMinutes, isActive, averageRating, reviewCount,
-        availableDays, createdAt,
+        preorderDeadlineDays, directOrderEnabled, prepTimeMinutes, isActive,
+        averageRating, reviewCount, availableDays, createdAt,
       ];
 }

@@ -124,6 +124,7 @@ class _BuyerHomePageState extends State<BuyerHomePage> {
                       final dish = _featuredDishes![index];
                       return DishCard(
                         dish: dish,
+                        compact: true,
                         onTap: () => context.push(
                           AppRoutes.dishDetail
                               .replaceFirst(':dishId', dish.id),

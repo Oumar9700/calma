@@ -13,6 +13,11 @@ import '../features/favorites/data/datasources/favorites_datasource.dart';
 import '../features/favorites/data/repositories/favorites_repository_impl.dart';
 import '../features/favorites/domain/repositories/favorites_repository.dart';
 import '../features/favorites/presentation/bloc/favorites_bloc.dart';
+import '../features/orders/data/datasources/firestore_order_datasource.dart';
+import '../features/orders/data/repositories/order_repository_impl.dart';
+import '../features/orders/domain/repositories/order_repository.dart';
+import '../features/orders/presentation/bloc/order_bloc.dart';
+import '../features/orders/presentation/bloc/vendor_order_bloc.dart';
 import '../shared/blocs/theme/theme_bloc.dart';
 import '../shared/services/storage_service.dart';
 
@@ -47,6 +52,16 @@ Future<void> setupInjection() async {
     () => FavoritesRepositoryImpl(sl<FavoritesDataSource>()),
   );
 
+  // ── Data sources (orders) ─────────────────────────────────────────────────
+  sl.registerLazySingleton<FirestoreOrderDataSource>(
+    () => FirestoreOrderDataSource(firestore, sl<StorageService>()),
+  );
+
+  // ── Repositories (orders) ─────────────────────────────────────────────────
+  sl.registerLazySingleton<OrderRepository>(
+    () => OrderRepositoryImpl(sl<FirestoreOrderDataSource>()),
+  );
+
   // ── Services ──────────────────────────────────────────────────────────────
   sl.registerLazySingleton<StorageService>(() => StorageService());
 
@@ -56,4 +71,6 @@ Future<void> setupInjection() async {
   sl.registerFactory<DishBloc>(() => DishBloc(sl<DishRepository>()));
   sl.registerFactory<ExploreBloc>(() => ExploreBloc(sl<DishRepository>()));
   sl.registerFactory<FavoritesBloc>(() => FavoritesBloc(sl<FavoritesRepository>()));
+  sl.registerFactory<OrderBloc>(() => OrderBloc(sl<OrderRepository>()));
+  sl.registerFactory<VendorOrderBloc>(() => VendorOrderBloc(sl<OrderRepository>()));
 }
