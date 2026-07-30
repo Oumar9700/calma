@@ -12,10 +12,12 @@ import 'core/theme/app_theme.dart';
 import 'di/injection_container.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
+import 'features/auth/presentation/bloc/auth_state.dart';
 import 'firebase_options.dart';
 import 'shared/blocs/theme/theme_bloc.dart';
 import 'shared/blocs/theme/theme_event.dart';
 import 'shared/blocs/theme/theme_state.dart';
+import 'shared/services/notification_service.dart';
 
 void main() async {
 
@@ -29,6 +31,7 @@ void main() async {
 
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     await setupInjection();
+    await sl<NotificationService>().initialize();
 
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
@@ -55,6 +58,7 @@ class _CalmaAppState extends State<CalmaApp> {
   late final AuthBloc _authBloc;
   late final ThemeBloc _themeBloc;
   late final GoRouter router;
+  StreamSubscription<AuthState>? _authSub;
 
   @override
   void initState() {
@@ -62,10 +66,26 @@ class _CalmaAppState extends State<CalmaApp> {
     _authBloc = sl<AuthBloc>()..add(const AuthCheckRequested());
     _themeBloc = sl<ThemeBloc>()..add(const ThemeLoaded());
     router = buildRouter(_authBloc);
+
+    // Attache le router pour la navigation depuis les notifications
+    sl<NotificationService>().attachRouter(router);
+
+    // Sauvegarde / suppression du token FCM selon l'état d'auth
+    String? _lastUid;
+    _authSub = _authBloc.stream.listen((state) {
+      if (state is Authenticated) {
+        _lastUid = state.user.uid;
+        sl<NotificationService>().saveToken(state.user.uid);
+      } else if (state is Unauthenticated && _lastUid != null) {
+        sl<NotificationService>().clearToken(_lastUid!);
+        _lastUid = null;
+      }
+    });
   }
 
   @override
   void dispose() {
+    _authSub?.cancel();
     _authBloc.close();
     _themeBloc.close();
     super.dispose();

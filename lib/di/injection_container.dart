@@ -19,6 +19,7 @@ import '../features/orders/domain/repositories/order_repository.dart';
 import '../features/orders/presentation/bloc/order_bloc.dart';
 import '../features/orders/presentation/bloc/vendor_order_bloc.dart';
 import '../shared/blocs/theme/theme_bloc.dart';
+import '../shared/services/notification_service.dart';
 import '../shared/services/storage_service.dart';
 
 final GetIt sl = GetIt.instance;
@@ -64,6 +65,7 @@ Future<void> setupInjection() async {
 
   // ── Services ──────────────────────────────────────────────────────────────
   sl.registerLazySingleton<StorageService>(() => StorageService());
+  sl.registerLazySingleton<NotificationService>(() => NotificationService());
 
   // ── BLoCs ─────────────────────────────────────────────────────────────────
   sl.registerFactory<AuthBloc>(() => AuthBloc(sl<AuthRepository>()));
