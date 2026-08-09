@@ -52,6 +52,7 @@ class FirestoreOrderDataSource {
     batch.update(_orders.doc(orderId), {
       'status': OrderStatus.cancelled.name,
       'updatedAt': Timestamp.fromDate(DateTime.now()),
+      if (isLate) 'isLateCancellation': true,
     });
 
     // Décrémente le bookedQuantity si liée à un créneau

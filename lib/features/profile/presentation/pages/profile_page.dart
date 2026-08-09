@@ -27,6 +27,10 @@ class ProfilePage extends StatelessWidget {
           body: ListView(
             padding: AppSpacing.pagePadding.copyWith(top: 24.h, bottom: 40.h),
             children: [
+              if (user.isBuyer && user.lateCancellationCount >= 3) ...[
+                _LateCancellationAlert(count: user.lateCancellationCount),
+                SizedBox(height: 16.h),
+              ],
               // Header profil
               _ProfileHeader(user: user),
               SizedBox(height: 28.h),
@@ -247,6 +251,56 @@ class _RoleBadge extends StatelessWidget {
   }
 }
 
+class _LateCancellationAlert extends StatelessWidget {
+  final int count;
+  const _LateCancellationAlert({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.warning_amber_rounded, size: 18.w, color: AppColors.error),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$count annulation${count > 1 ? 's' : ''} tardive${count > 1 ? 's' : ''}',
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.error,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'Tu as annulé plusieurs commandes moins de 24h avant la livraison. Les vendeurs investissent du temps et des ressources — merci d\'honorer tes commandes.',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: context.colorOnSurface,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StatsRow extends StatelessWidget {
   final AppUser user;
   const _StatsRow({required this.user});
@@ -267,8 +321,11 @@ class _StatsRow extends StatelessWidget {
           _StatCell(value: user.countryOfOrigin ?? '—', label: 'Pays'),
           _Divider(),
           _StatCell(
-            value: user.campus ?? user.city ?? '—',
-            label: 'Campus',
+            value: user.lateCancellationCount > 0
+                ? '${user.lateCancellationCount}'
+                : '—',
+            label: 'Annul. tardives',
+            valueColor: user.lateCancellationCount >= 3 ? AppColors.error : null,
           ),
         ],
       ),
@@ -279,7 +336,8 @@ class _StatsRow extends StatelessWidget {
 class _StatCell extends StatelessWidget {
   final String value;
   final String label;
-  const _StatCell({required this.value, required this.label});
+  final Color? valueColor;
+  const _StatCell({required this.value, required this.label, this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -292,7 +350,7 @@ class _StatCell extends StatelessWidget {
               fontFamily: 'PlusJakartaSans',
               fontSize: 16.sp,
               fontWeight: FontWeight.w700,
-              color: context.colorOnSurface,
+              color: valueColor ?? context.colorOnSurface,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

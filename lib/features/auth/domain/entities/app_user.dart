@@ -12,7 +12,7 @@ class AppUser extends Equatable {
   final String? countryOfOrigin;
   final String? city;
   final String? campus;
-  final int cancellationCount;
+  final int lateCancellationCount;
   final bool isAmbassador;
   final String? referralCode;
   final String? referredBy;
@@ -40,7 +40,7 @@ class AppUser extends Equatable {
     this.countryOfOrigin,
     this.city,
     this.campus,
-    this.cancellationCount = 0,
+    this.lateCancellationCount = 0,
     this.isAmbassador = false,
     this.referralCode,
     this.referredBy,
@@ -75,7 +75,7 @@ class AppUser extends Equatable {
     String? countryOfOrigin,
     String? city,
     String? campus,
-    int? cancellationCount,
+    int? lateCancellationCount,
     bool? isAmbassador,
     String? referralCode,
     String? referredBy,
@@ -100,7 +100,7 @@ class AppUser extends Equatable {
       countryOfOrigin: countryOfOrigin ?? this.countryOfOrigin,
       city: city ?? this.city,
       campus: campus ?? this.campus,
-      cancellationCount: cancellationCount ?? this.cancellationCount,
+      lateCancellationCount: lateCancellationCount ?? this.lateCancellationCount,
       isAmbassador: isAmbassador ?? this.isAmbassador,
       referralCode: referralCode ?? this.referralCode,
       referredBy: referredBy ?? this.referredBy,
@@ -129,7 +129,7 @@ class AppUser extends Equatable {
       'countryOfOrigin': countryOfOrigin,
       'city': city,
       'campus': campus,
-      'cancellationCount': cancellationCount,
+      'lateCancellationCount': lateCancellationCount,
       'isAmbassador': isAmbassador,
       'referralCode': referralCode,
       'referredBy': referredBy,
@@ -161,7 +161,7 @@ class AppUser extends Equatable {
       countryOfOrigin: data['countryOfOrigin'] as String?,
       city: data['city'] as String?,
       campus: data['campus'] as String?,
-      cancellationCount: data['cancellationCount'] as int? ?? 0,
+      lateCancellationCount: data['lateCancellationCount'] as int? ?? 0,
       isAmbassador: data['isAmbassador'] as bool? ?? false,
       referralCode: data['referralCode'] as String?,
       referredBy: data['referredBy'] as String?,

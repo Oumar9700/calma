@@ -265,7 +265,7 @@ class _OrderDetailContentState extends State<_OrderDetailContent> {
               ],
               // Action buttons
               if (canCancel)
-                _CancelButton(orderId: order.id),
+                _CancelButton(order: order),
               if (canReport) ...[
                 SizedBox(height: 12.h),
                 _ReportButton(orderId: order.id),
@@ -573,38 +573,77 @@ class _PhotoPlaceholder extends StatelessWidget {
 }
 
 class _CancelButton extends StatelessWidget {
-  final String orderId;
-  const _CancelButton({required this.orderId});
+  final Order order;
+  const _CancelButton({required this.order});
+
+  bool get _isLate {
+    if (order.preorderDate == null) return false;
+    return order.preorderDate!.difference(DateTime.now()).inHours < 24;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: () => _confirm(context),
-      style: OutlinedButton.styleFrom(
-        minimumSize: Size(double.infinity, 48.h),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.r),
+    return Column(
+      children: [
+        if (_isLate)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(12.w),
+            margin: EdgeInsets.only(bottom: 10.h),
+            decoration: BoxDecoration(
+              color: context.colorError.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(color: context.colorError.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.warning_amber_rounded,
+                    size: 16.w, color: context.colorError),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    'Annulation tardive : moins de 24h avant la date de livraison. Cette annulation sera comptabilisée.',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: context.colorError,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        OutlinedButton(
+          onPressed: () => _confirm(context),
+          style: OutlinedButton.styleFrom(
+            minimumSize: Size(double.infinity, 48.h),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            side: BorderSide(color: context.colorError.withOpacity(0.6)),
+          ),
+          child: Text(
+            'Annuler la commande',
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w500,
+              color: context.colorError,
+            ),
+          ),
         ),
-        side: BorderSide(color: context.colorError.withOpacity(0.6)),
-      ),
-      child: Text(
-        'Annuler la commande',
-        style: TextStyle(
-          fontSize: 14.sp,
-          fontWeight: FontWeight.w500,
-          color: context.colorError,
-        ),
-      ),
+      ],
     );
   }
 
   Future<void> _confirm(BuildContext context) async {
+    final isLate = _isLate;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Annuler la commande ?'),
-        content: const Text(
-            'Cette action est irréversible. Êtes-vous sûr ?'),
+        content: Text(isLate
+            ? 'Annulation tardive (moins de 24h avant livraison). Cette action sera enregistrée sur ton profil. Confirmer ?'
+            : 'Cette action est irréversible. Êtes-vous sûr ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -618,7 +657,7 @@ class _CancelButton extends StatelessWidget {
       ),
     );
     if (ok == true && context.mounted) {
-      context.read<OrderBloc>().add(CancelOrder(orderId));
+      context.read<OrderBloc>().add(CancelOrder(order.id, isLate: isLate));
       final sub = context.read<OrderBloc>().actionMessages.listen((msg) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

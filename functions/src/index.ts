@@ -3,6 +3,7 @@ import {
   onDocumentCreated,
   onDocumentUpdated,
 } from "firebase-functions/v2/firestore";
+import {onSchedule} from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
 admin.initializeApp();
@@ -16,7 +17,10 @@ interface OrderData {
   vendorId: string;
   dishName: string;
   status: string;
+  type?: string;
   totalPrice: number;
+  preorderDate?: admin.firestore.Timestamp;
+  isLateCancellation?: boolean;
 }
 
 interface NotifConfig {
@@ -85,6 +89,26 @@ export const onOrderCreated = onDocumentCreated(
       body: `${data.dishName} — en attente de votre réponse`,
       role: "vendor",
     });
+
+    // Message de bonne conduite lors de la 1ère précommande
+    if (data.type === "preorder") {
+      const priorOrders = await db
+        .collection("orders")
+        .where("buyerId", "==", data.buyerId)
+        .where("type", "==", "preorder")
+        .limit(2)
+        .get();
+      // priorOrders inclut la commande qu'on vient de créer → 1 seul doc = 1ère précommande
+      if (priorOrders.size <= 1) {
+        await sendOrderNotification(event.params.orderId, {
+          recipientId: data.buyerId,
+          title: "Ta première précommande",
+          body:
+            "Le vendeur a investi pour toi. Pense bien a honorer ta commande.",
+          role: "buyer",
+        });
+      }
+    }
   }
 );
 
@@ -107,7 +131,7 @@ export const onOrderStatusChanged = onDocumentUpdated(
     case "accepted":
       config = {
         recipientId: buyerId,
-        title: "Commande acceptée 🎉",
+        title: "Commande acceptee",
         body: `${dishName} — envoyez le paiement pour confirmer`,
         role: "buyer",
       };
@@ -116,8 +140,8 @@ export const onOrderStatusChanged = onDocumentUpdated(
     case "rejected":
       config = {
         recipientId: buyerId,
-        title: "Commande refusée",
-        body: `${dishName} — le vendeur a refusé votre demande`,
+        title: "Commande refusee",
+        body: `${dishName} — le vendeur a refuse votre demande`,
         role: "buyer",
       };
       break;
@@ -125,8 +149,8 @@ export const onOrderStatusChanged = onDocumentUpdated(
     case "awaitingConfirmation":
       config = {
         recipientId: vendorId,
-        title: "Preuve de paiement reçue",
-        body: `${dishName} — vérifiez la capture et confirmez`,
+        title: "Preuve de paiement recue",
+        body: `${dishName} — verifiez la capture et confirmez`,
         role: "vendor",
       };
       break;
@@ -134,8 +158,8 @@ export const onOrderStatusChanged = onDocumentUpdated(
     case "preparing":
       config = {
         recipientId: buyerId,
-        title: "Paiement confirmé !",
-        body: `${dishName} est en cours de préparation`,
+        title: "Paiement confirme !",
+        body: `${dishName} est en cours de preparation`,
         role: "buyer",
       };
       break;
@@ -143,24 +167,95 @@ export const onOrderStatusChanged = onDocumentUpdated(
     case "ready":
       config = {
         recipientId: buyerId,
-        title: "Commande prête ! 🍽️",
-        body: `${dishName} — venez récupérer votre commande`,
+        title: "Commande prete !",
+        body: `${dishName} — venez recuperer votre commande`,
         role: "buyer",
       };
       break;
 
     case "cancelled":
-      config = {
-        recipientId: vendorId,
-        title: "Commande annulée",
-        body: `${dishName} — l'acheteur a annulé sa commande`,
-        role: "vendor",
-      };
+      if (after.isLateCancellation) {
+        // Annulation tardive : notifier le vendeur avec message spécifique
+        config = {
+          recipientId: vendorId,
+          title: "Annulation tardive",
+          body:
+            `${dishName} — l'acheteur a annule moins de 24h avant la livraison`,
+          role: "vendor",
+        };
+      } else {
+        config = {
+          recipientId: vendorId,
+          title: "Commande annulee",
+          body: `${dishName} — l'acheteur a annule sa commande`,
+          role: "vendor",
+        };
+      }
       break;
     }
 
     if (config) {
       await sendOrderNotification(orderId, config);
     }
+  }
+);
+
+// ── Rappel 24h avant une précommande ─────────────────────────────────────
+
+export const preorderReminder = onSchedule(
+  {
+    schedule: "every day 09:00",
+    timeZone: "Europe/Paris",
+    region: "europe-west1",
+  },
+  async () => {
+    const now = new Date();
+    const in23h = new Date(now.getTime() + 23 * 60 * 60 * 1000);
+    const in25h = new Date(now.getTime() + 25 * 60 * 60 * 1000);
+
+    const snap = await db
+      .collection("orders")
+      .where("type", "==", "preorder")
+      .where(
+        "status",
+        "in",
+        ["accepted", "awaitingConfirmation", "preparing"]
+      )
+      .where("preorderDate", ">=", admin.firestore.Timestamp.fromDate(in23h))
+      .where("preorderDate", "<=", admin.firestore.Timestamp.fromDate(in25h))
+      .get();
+
+    const promises: Promise<void>[] = [];
+    for (const doc of snap.docs) {
+      const data = doc.data() as OrderData;
+      const dateStr = data.preorderDate
+        ?.toDate()
+        .toLocaleDateString("fr-FR", {weekday: "long", day: "numeric",
+          month: "long"}) ?? "";
+
+      // Rappel acheteur
+      promises.push(
+        sendOrderNotification(doc.id, {
+          recipientId: data.buyerId,
+          title: "Rappel : commande demain",
+          body: `${data.dishName} est prevue pour le ${dateStr}`,
+          role: "buyer",
+        })
+      );
+
+      // Rappel vendeur
+      promises.push(
+        sendOrderNotification(doc.id, {
+          recipientId: data.vendorId,
+          title: "Rappel : preparation demain",
+          body:
+            `${data.dishName} est attendue par un acheteur le ${dateStr}`,
+          role: "vendor",
+        })
+      );
+    }
+
+    await Promise.all(promises);
+    console.log(`Rappels 24h envoyes : ${snap.size} commandes`);
   }
 );

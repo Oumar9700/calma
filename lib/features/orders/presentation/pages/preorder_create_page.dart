@@ -22,7 +22,7 @@ import '../bloc/order_bloc.dart';
 import '../bloc/order_event.dart';
 import '../bloc/order_state.dart';
 import 'order_create_page.dart'
-    show DishSummaryCard, QuantitySelector, HowItWorksCard;
+    show DishSummaryCard, QuantitySelector, HowItWorksCard, LegalDisclaimer;
 
 // ── Types de créneaux disponibles ──────────────────────────────────────────
 
@@ -439,36 +439,43 @@ class _PreorderCreatePageState extends State<PreorderCreatePage> {
         ),
         bottomNavigationBar: SafeArea(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
-            child: FilledButton(
-              onPressed: (_isLoading || _options.isEmpty)
-                  ? null
-                  : _showPaymentInstructions,
-              style: FilledButton.styleFrom(
-                backgroundColor: context.colorPrimary,
-                minimumSize: Size(double.infinity, 52.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14.r),
-                ),
-              ),
-              child: _isLoading
-                  ? SizedBox(
-                      height: 22.h,
-                      width: 22.h,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: context.colorOnPrimary,
-                      ),
-                    )
-                  : Text(
-                      'Envoyer la demande — ${total.toStringAsFixed(2)} €',
-                      style: TextStyle(
-                        fontFamily: 'PlusJakartaSans',
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
+            padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 12.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const LegalDisclaimer(),
+                SizedBox(height: 8.h),
+                FilledButton(
+                  onPressed: (_isLoading || _options.isEmpty)
+                      ? null
+                      : _showPaymentInstructions,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: context.colorPrimary,
+                    minimumSize: Size(double.infinity, 52.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14.r),
                     ),
+                  ),
+                  child: _isLoading
+                      ? SizedBox(
+                          height: 22.h,
+                          width: 22.h,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: context.colorOnPrimary,
+                          ),
+                        )
+                      : Text(
+                          'Envoyer la demande — ${total.toStringAsFixed(2)} €',
+                          style: TextStyle(
+                            fontFamily: 'PlusJakartaSans',
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
+              ],
             ),
           ),
         ),
