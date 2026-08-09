@@ -25,6 +25,10 @@ class OrderRepositoryImpl implements OrderRepository {
       _datasource.watchBuyerOrders(buyerId);
 
   @override
+  Stream<Order?> watchOrder(String orderId) =>
+      _datasource.watchOrder(orderId);
+
+  @override
   Future<Order?> getOrder(String orderId) => _datasource.getOrder(orderId);
 
   @override

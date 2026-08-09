@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/extensions/build_context_ext.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../di/injection_container.dart';
 import '../../domain/entities/order.dart';
 import '../../domain/entities/order_status.dart';
@@ -28,8 +29,8 @@ class BuyerOrderDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Order?>(
-      future: sl<OrderRepository>().getOrder(orderId),
+    return StreamBuilder<Order?>(
+      stream: sl<OrderRepository>().watchOrder(orderId),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -105,7 +106,13 @@ class _OrderDetailContentState extends State<_OrderDetailContent> {
         title: const Text('Détail de la commande'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRoutes.orders);
+            }
+          },
         ),
       ),
       body: SafeArea(

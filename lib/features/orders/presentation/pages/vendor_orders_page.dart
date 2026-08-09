@@ -102,7 +102,7 @@ class _VendorOrdersPageState extends State<VendorOrdersPage>
               controller: _tabController,
               children: [
                 _OrdersTab(orders: orders),
-                _PlanningTab(slots: slots),
+                _PlanningTab(slots: slots, orders: orders),
               ],
             );
           },
@@ -266,10 +266,19 @@ class _VendorOrderTile extends StatelessWidget {
 
 class _PlanningTab extends StatelessWidget {
   final List<PreorderSlot> slots;
-  const _PlanningTab({required this.slots});
+  final List<Order> orders;
+  const _PlanningTab({required this.slots, required this.orders});
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final upcomingSlots = slots
+        .where((s) => !s.date.isBefore(DateTime(now.year, now.month, now.day)))
+        .toList();
+    final pastSlots = slots
+        .where((s) => s.date.isBefore(DateTime(now.year, now.month, now.day)))
+        .toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -336,10 +345,26 @@ class _PlanningTab extends StatelessWidget {
           )
         else
           Expanded(
-            child: ListView.builder(
+            child: ListView(
               padding: EdgeInsets.only(bottom: 80.h, top: 4.h),
-              itemCount: slots.length,
-              itemBuilder: (context, index) => _SlotTile(slot: slots[index]),
+              children: [
+                if (upcomingSlots.isNotEmpty) ...[
+                  _SectionHeader(label: 'En cours / à venir'),
+                  ...upcomingSlots.map((s) => _SlotTile(
+                        slot: s,
+                        slotOrders:
+                            orders.where((o) => o.slotId == s.id).toList(),
+                      )),
+                ],
+                if (pastSlots.isNotEmpty) ...[
+                  _SectionHeader(label: 'Passés'),
+                  ...pastSlots.map((s) => _SlotTile(
+                        slot: s,
+                        slotOrders:
+                            orders.where((o) => o.slotId == s.id).toList(),
+                      )),
+                ],
+              ],
             ),
           ),
       ],
@@ -347,9 +372,32 @@ class _PlanningTab extends StatelessWidget {
   }
 }
 
+class _SectionHeader extends StatelessWidget {
+  final String label;
+  const _SectionHeader({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 4.h),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'PlusJakartaSans',
+          fontSize: 12.sp,
+          fontWeight: FontWeight.w700,
+          color: context.colorOnSurfaceVariant,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
 class _SlotTile extends StatelessWidget {
   final PreorderSlot slot;
-  const _SlotTile({required this.slot});
+  final List<Order> slotOrders;
+  const _SlotTile({required this.slot, required this.slotOrders});
 
   @override
   Widget build(BuildContext context) {
@@ -371,7 +419,9 @@ class _SlotTile extends StatelessWidget {
 
     return Opacity(
       opacity: isPast ? 0.55 : 1.0,
-      child: Container(
+      child: GestureDetector(
+        onTap: () => _showSlotDetail(context),
+        child: Container(
         margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
         padding: EdgeInsets.all(14.w),
         decoration: BoxDecoration(
@@ -523,9 +573,205 @@ class _SlotTile extends StatelessWidget {
           ],
         ),
       ),
+      ),
+    );
+  }
+
+  void _showSlotDetail(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _SlotDetailSheet(slot: slot, slotOrders: slotOrders),
     );
   }
 
   static bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+class _SlotDetailSheet extends StatelessWidget {
+  final PreorderSlot slot;
+  final List<Order> slotOrders;
+  const _SlotDetailSheet({required this.slot, required this.slotOrders});
+
+  @override
+  Widget build(BuildContext context) {
+    final dateStr =
+        DateFormat('EEEE d MMMM yyyy', 'fr').format(slot.date);
+    final fillRatio =
+        slot.maxQuantity > 0 ? slot.bookedQuantity / slot.maxQuantity : 0.0;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.92,
+      builder: (_, controller) => Container(
+        decoration: BoxDecoration(
+          color: context.colorSurface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Container(
+              margin: EdgeInsets.only(top: 12.h),
+              width: 36.w,
+              height: 4.h,
+              decoration: BoxDecoration(
+                color: context.colorBorder,
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 8.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          slot.dishName,
+                          style: TextStyle(
+                            fontFamily: 'PlusJakartaSans',
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w700,
+                            color: context.colorOnSurface,
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          dateStr,
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            color: context.colorOnSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${slot.bookedQuantity}/${slot.maxQuantity}',
+                        style: TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.w800,
+                          color: context.colorPrimary,
+                        ),
+                      ),
+                      Text(
+                        'réservations',
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: context.colorOnSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Progress bar
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4.r),
+                child: LinearProgressIndicator(
+                  value: fillRatio.clamp(0.0, 1.0),
+                  backgroundColor: context.colorSurfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    slot.isFull
+                        ? context.colorError
+                        : fillRatio >= 0.7
+                            ? const Color(0xFFF97316)
+                            : const Color(0xFF22C55E),
+                  ),
+                  minHeight: 6.h,
+                ),
+              ),
+            ),
+            SizedBox(height: 16.h),
+            Divider(height: 1, color: context.colorBorder.withValues(alpha: 0.3)),
+            // Orders list
+            Expanded(
+              child: slotOrders.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.receipt_long_outlined,
+                              size: 40.w, color: context.colorBorder),
+                          SizedBox(height: 12.h),
+                          Text(
+                            'Aucune réservation',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              color: context.colorOnSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: controller,
+                      padding:
+                          EdgeInsets.symmetric(vertical: 8.h, horizontal: 16.w),
+                      itemCount: slotOrders.length,
+                      itemBuilder: (_, i) {
+                        final order = slotOrders[i];
+                        final initials = order.buyerId.length >= 2
+                            ? order.buyerId.substring(0, 2).toUpperCase()
+                            : '?';
+                        return Container(
+                          margin: EdgeInsets.symmetric(vertical: 4.h),
+                          padding: EdgeInsets.all(12.w),
+                          decoration: BoxDecoration(
+                            color: context.colorSurfaceContainerHighest
+                                .withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16.r,
+                                backgroundColor:
+                                    context.colorPrimary.withValues(alpha: 0.15),
+                                child: Text(
+                                  initials,
+                                  style: TextStyle(
+                                    fontFamily: 'PlusJakartaSans',
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.colorPrimary,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: Text(
+                                  '${order.quantity} portion${order.quantity > 1 ? 's' : ''}',
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w500,
+                                    color: context.colorOnSurface,
+                                  ),
+                                ),
+                              ),
+                              OrderStatusChip(status: order.status),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

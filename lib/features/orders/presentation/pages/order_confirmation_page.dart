@@ -50,11 +50,10 @@ class _ConfirmationContent extends StatelessWidget {
     return Scaffold(
       backgroundColor: context.colorScheme.surface,
       body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(24.w, 40.h, 24.w, 24.h),
           child: Column(
             children: [
-              const Spacer(),
               Container(
                 width: 80.w,
                 height: 80.w,
@@ -91,7 +90,7 @@ class _ConfirmationContent extends StatelessWidget {
               _OrderSummaryCard(order: order, dateStr: dateStr),
               SizedBox(height: 16.h),
               _NextStepTip(isPreorder: isPreorder),
-              const Spacer(),
+              SizedBox(height: 32.h),
               FilledButton(
                 onPressed: () => context.go(AppRoutes.orders),
                 style: FilledButton.styleFrom(

@@ -8,6 +8,7 @@ abstract class OrderRepository {
   Future<void> cancelOrder(String orderId, {bool isLate = false});
   Future<void> uploadPaymentCapture(String orderId, String localFilePath);
   Stream<List<Order>> watchBuyerOrders(String buyerId);
+  Stream<Order?> watchOrder(String orderId);
   Future<Order?> getOrder(String orderId);
   Future<void> reportProblem(String orderId, String description);
 

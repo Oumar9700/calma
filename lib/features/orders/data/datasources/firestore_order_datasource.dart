@@ -94,6 +94,12 @@ class FirestoreOrderDataSource {
         .map((snap) => snap.docs.map(_orderFromDoc).toList());
   }
 
+  Stream<Order?> watchOrder(String orderId) {
+    return _orders.doc(orderId).snapshots().map(
+          (doc) => doc.exists ? _orderFromDoc(doc) : null,
+        );
+  }
+
   Future<Order?> getOrder(String orderId) async {
     final doc = await _orders.doc(orderId).get();
     if (!doc.exists) return null;

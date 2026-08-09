@@ -97,12 +97,33 @@ class DishDetailPage extends StatelessWidget {
   }
 }
 
-class _HeroHeader extends StatelessWidget {
+class _HeroHeader extends StatefulWidget {
   final Dish dish;
   const _HeroHeader({required this.dish});
 
   @override
+  State<_HeroHeader> createState() => _HeroHeaderState();
+}
+
+class _HeroHeaderState extends State<_HeroHeader> {
+  late final PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final photos = widget.dish.photoUrls;
     return SliverAppBar(
       expandedHeight: 280.h,
       pinned: true,
@@ -112,13 +133,46 @@ class _HeroHeader extends StatelessWidget {
         onPressed: () => context.pop(),
       ),
       flexibleSpace: FlexibleSpaceBar(
-        background: dish.photoUrls.isNotEmpty
-            ? CachedNetworkImage(
-                imageUrl: dish.photoUrls.first,
-                fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => _Placeholder(),
-              )
-            : _Placeholder(),
+        background: photos.isEmpty
+            ? _Placeholder()
+            : Stack(
+                fit: StackFit.expand,
+                children: [
+                  PageView.builder(
+                    controller: _pageController,
+                    itemCount: photos.length,
+                    onPageChanged: (i) => setState(() => _currentPage = i),
+                    itemBuilder: (_, i) => CachedNetworkImage(
+                      imageUrl: photos[i],
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => _Placeholder(),
+                    ),
+                  ),
+                  if (photos.length > 1)
+                    Positioned(
+                      bottom: 12.h,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          photos.length,
+                          (i) => AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: EdgeInsets.symmetric(horizontal: 3.w),
+                            width: _currentPage == i ? 16.w : 6.w,
+                            height: 6.h,
+                            decoration: BoxDecoration(
+                              color: Colors.white
+                                  .withValues(alpha: _currentPage == i ? 0.95 : 0.5),
+                              borderRadius: BorderRadius.circular(3.r),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
       ),
     );
   }
