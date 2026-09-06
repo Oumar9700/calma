@@ -20,9 +20,11 @@ class UpdateOrderStatus extends VendorOrderEvent {
   final String orderId;
   final OrderStatus status;
   final String? note;
-  const UpdateOrderStatus(this.orderId, this.status, {this.note});
+  final String? confirmationCode;
+  const UpdateOrderStatus(this.orderId, this.status,
+      {this.note, this.confirmationCode});
   @override
-  List<Object?> get props => [orderId, status, note];
+  List<Object?> get props => [orderId, status, note, confirmationCode];
 }
 
 class CreatePreorderSlot extends VendorOrderEvent {
@@ -38,6 +40,21 @@ class ToggleSlotActive extends VendorOrderEvent {
   const ToggleSlotActive(this.slotId, {required this.isActive});
   @override
   List<Object?> get props => [slotId, isActive];
+}
+
+class BulkAcceptPreorderGroup extends VendorOrderEvent {
+  final List<String> orderIds;
+  const BulkAcceptPreorderGroup(this.orderIds);
+  @override
+  List<Object?> get props => [orderIds];
+}
+
+class DeactivateSlotWithCancellations extends VendorOrderEvent {
+  final String slotId;
+  final List<String> orderIds;
+  const DeactivateSlotWithCancellations(this.slotId, this.orderIds);
+  @override
+  List<Object?> get props => [slotId, orderIds];
 }
 
 class LoadVendorSlots extends VendorOrderEvent {

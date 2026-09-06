@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/extensions/build_context_ext.dart';
@@ -40,6 +41,8 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
   final _countryCtrl = TextEditingController();
   final _regionCtrl = TextEditingController();
   final _deadlineDaysCtrl = TextEditingController();
+  final _preorderMinimumCtrl = TextEditingController();
+  final _preorderClosingHoursCtrl = TextEditingController();
 
   DishCategory _category = DishCategory.mainDish;
   bool _preorderEnabled = false;
@@ -67,6 +70,8 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
       _category = d.category;
       _preorderEnabled = d.preorderEnabled;
       _deadlineDaysCtrl.text = d.preorderDeadlineDays?.toString() ?? '';
+      _preorderMinimumCtrl.text = d.preorderMinimum?.toString() ?? '';
+      _preorderClosingHoursCtrl.text = d.preorderClosingHoursBeforeDate?.toString() ?? '';
       _directOrderEnabled = d.directOrderEnabled;
       _isActive = d.isActive;
       _availableDays = List.from(d.availableDays);
@@ -97,6 +102,8 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
     _countryCtrl.dispose();
     _regionCtrl.dispose();
     _deadlineDaysCtrl.dispose();
+    _preorderMinimumCtrl.dispose();
+    _preorderClosingHoursCtrl.dispose();
     _actionSub?.cancel();
     super.dispose();
   }
@@ -167,6 +174,13 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
       preorderDeadlineDays: _preorderEnabled && _deadlineDaysCtrl.text.trim().isNotEmpty
           ? int.tryParse(_deadlineDaysCtrl.text.trim())
           : null,
+      preorderMinimum: _preorderEnabled && _preorderMinimumCtrl.text.trim().isNotEmpty
+          ? int.tryParse(_preorderMinimumCtrl.text.trim())
+          : null,
+      preorderClosingHoursBeforeDate: _preorderEnabled && _preorderClosingHoursCtrl.text.trim().isNotEmpty
+          ? int.tryParse(_preorderClosingHoursCtrl.text.trim())
+          : null,
+      preorderFixedDates: const [],
       directOrderEnabled: _directOrderEnabled,
       isActive: _isActive,
       availableDays: _availableDays,
@@ -328,6 +342,20 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
                       label: 'Délai de réservation (jours avant livraison)',
                       hint: 'Ex: 1 = commander au moins 1 jour avant',
                       controller: _deadlineDaysCtrl,
+                      keyboardType: TextInputType.number,
+                    ),
+                    SizedBox(height: 10.h),
+                    AppTextField(
+                      label: 'Minimum de précommandes (optionnel)',
+                      hint: 'Ex: 3 = au moins 3 commandes requises',
+                      controller: _preorderMinimumCtrl,
+                      keyboardType: TextInputType.number,
+                    ),
+                    SizedBox(height: 10.h),
+                    AppTextField(
+                      label: 'Clôture des réservations (heures avant livraison)',
+                      hint: 'Ex: 24 = ferme 24h avant. Défaut : 24h',
+                      controller: _preorderClosingHoursCtrl,
                       keyboardType: TextInputType.number,
                     ),
                   ],
@@ -665,3 +693,4 @@ class _DayPicker extends StatelessWidget {
     );
   }
 }
+

@@ -25,6 +25,9 @@ end
 
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
 
+# Désactiver Swift Package Manager — conflit firebase-ios-sdk 11.x vs 12.x
+ENV['SWIFT_PACKAGE_MANAGER_ENABLED'] = 'false'
+
 flutter_ios_podfile_setup
 
 target 'Runner' do

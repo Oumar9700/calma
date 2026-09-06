@@ -9,6 +9,8 @@ import '../../../../core/router/app_routes.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../domain/entities/order.dart';
+import '../../domain/entities/order_status.dart';
+import '../../domain/entities/order_type.dart';
 import '../../domain/entities/preorder_slot.dart';
 import '../bloc/vendor_order_bloc.dart';
 import '../bloc/vendor_order_event.dart';
@@ -130,6 +132,33 @@ class _OrdersTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Groupes de précommandes simples (group buy)
+    final groupBuyOrders = orders
+        .where((o) =>
+            o.type == OrderType.preorder &&
+            o.slotId == null &&
+            o.preorderGroupMinimum != null &&
+            o.status == OrderStatus.pending)
+        .toList();
+
+    // Grouper par (dishId, jour)
+    final Map<String, List<Order>> groups = {};
+    for (final o in groupBuyOrders) {
+      if (o.preorderDate == null) continue;
+      final day = DateFormat('yyyy-MM-dd').format(o.preorderDate!);
+      final key = '${o.dishId}::$day';
+      groups.putIfAbsent(key, () => []).add(o);
+    }
+
+    // Commandes individuelles (hors group buy pending)
+    final individualOrders = orders
+        .where((o) =>
+            !(o.type == OrderType.preorder &&
+                o.slotId == null &&
+                o.preorderGroupMinimum != null &&
+                o.status == OrderStatus.pending))
+        .toList();
+
     if (orders.isEmpty) {
       return Center(
         child: Padding(
@@ -155,13 +184,174 @@ class _OrdersTab extends StatelessWidget {
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(vertical: 8.h),
-      itemCount: orders.length,
-      itemBuilder: (context, index) {
-        final order = orders[index];
-        return _VendorOrderTile(order: order);
-      },
+    return CustomScrollView(
+      slivers: [
+        if (groups.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 8.h),
+              child: Text(
+                'Groupes précommandes',
+                style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                  color: context.colorOnSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (ctx, i) {
+                final entry = groups.entries.elementAt(i);
+                return _PreorderGroupTile(groupOrders: entry.value);
+              },
+              childCount: groups.length,
+            ),
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: 8.h)),
+        ],
+        if (individualOrders.isNotEmpty) ...[
+          if (groups.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
+                child: Text(
+                  'Autres commandes',
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    color: context.colorOnSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (ctx, i) => _VendorOrderTile(order: individualOrders[i]),
+              childCount: individualOrders.length,
+            ),
+          ),
+        ],
+        SliverToBoxAdapter(child: SizedBox(height: 16.h)),
+      ],
+    );
+  }
+}
+
+class _PreorderGroupTile extends StatelessWidget {
+  final List<Order> groupOrders;
+  const _PreorderGroupTile({required this.groupOrders});
+
+  @override
+  Widget build(BuildContext context) {
+    final first = groupOrders.first;
+    final minimum = first.preorderGroupMinimum ?? 1;
+    final count = groupOrders.length;
+    final reached = count >= minimum;
+    final dateStr = first.preorderDate != null
+        ? DateFormat('EEEE d MMMM yyyy', 'fr').format(first.preorderDate!)
+        : '—';
+    final closingStr = first.preorderGroupClosingTime != null
+        ? DateFormat('d MMM à HH:mm', 'fr')
+            .format(first.preorderGroupClosingTime!)
+        : null;
+
+    final color = reached ? const Color(0xFF22C55E) : context.colorPrimary;
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: context.colorSurface,
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(
+          color: reached
+              ? const Color(0xFF22C55E).withValues(alpha: 0.4)
+              : context.colorBorder.withValues(alpha: 0.3),
+          width: reached ? 1.5 : 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  first.dishName,
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: context.colorOnSurface,
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Text(
+                  '$count / $minimum',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            dateStr,
+            style: TextStyle(
+                fontSize: 12.sp, color: context.colorOnSurfaceVariant),
+          ),
+          if (closingStr != null)
+            Text(
+              'Clôture : $closingStr',
+              style: TextStyle(
+                  fontSize: 11.sp, color: context.colorOnSurfaceVariant),
+            ),
+          SizedBox(height: 12.h),
+          if (reached)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  context.read<VendorOrderBloc>().add(
+                        BulkAcceptPreorderGroup(
+                            groupOrders.map((o) => o.id).toList()),
+                      );
+                },
+                icon: Icon(Icons.check_circle_outline, size: 16.r),
+                label: const Text('Valider le groupe'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF22C55E),
+                  minimumSize: Size(0, 38.h),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.r)),
+                ),
+              ),
+            )
+          else
+            Text(
+              'En attente : $count/${minimum} réservation${minimum > 1 ? 's' : ''} requise${minimum > 1 ? 's' : ''}',
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: context.colorOnSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -394,10 +584,69 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _SlotTile extends StatelessWidget {
+class _SlotTile extends StatefulWidget {
   final PreorderSlot slot;
   final List<Order> slotOrders;
   const _SlotTile({required this.slot, required this.slotOrders});
+
+  @override
+  State<_SlotTile> createState() => _SlotTileState();
+}
+
+class _SlotTileState extends State<_SlotTile> {
+  PreorderSlot get slot => widget.slot;
+  List<Order> get slotOrders => widget.slotOrders;
+
+  Future<void> _handleToggle(bool v) async {
+    if (!v) {
+      final activeOrders = slotOrders
+          .where((o) =>
+              o.status == OrderStatus.pending ||
+              o.status == OrderStatus.accepted ||
+              o.status == OrderStatus.awaitingConfirmation)
+          .toList();
+
+      if (activeOrders.isNotEmpty) {
+        final confirmed = await _showDeactivateDialog(activeOrders.length);
+        if (!mounted || confirmed != true) return;
+        context.read<VendorOrderBloc>().add(
+              DeactivateSlotWithCancellations(
+                slot.id,
+                activeOrders.map((o) => o.id).toList(),
+              ),
+            );
+        return;
+      }
+    }
+    if (!mounted) return;
+    context
+        .read<VendorOrderBloc>()
+        .add(ToggleSlotActive(slot.id, isActive: v));
+  }
+
+  Future<bool?> _showDeactivateDialog(int count) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Désactiver ce créneau ?'),
+        content: Text(
+          '$count réservation${count > 1 ? 's' : ''} active${count > 1 ? 's' : ''} ser${count > 1 ? 'ont' : 'a'} annulée${count > 1 ? 's' : ''} '
+          'et les acheteurs seront notifiés.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Désactiver'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -559,13 +808,7 @@ class _SlotTile extends StatelessWidget {
                 SizedBox(width: 12.w),
                 Switch(
                   value: slot.isActive,
-                  onChanged: isPast
-                      ? null
-                      : (v) {
-                          context.read<VendorOrderBloc>().add(
-                                ToggleSlotActive(slot.id, isActive: v),
-                              );
-                        },
+                  onChanged: isPast ? null : _handleToggle,
                   activeColor: context.colorPrimary,
                 ),
               ],

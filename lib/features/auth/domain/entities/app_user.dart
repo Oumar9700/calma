@@ -27,6 +27,7 @@ class AppUser extends Equatable {
   final List<String> paymentMethods;
   final List<String> availableDays;
   final String? approximateLocation;
+  final String? meetingPoint;
   final String? coverPhotoUrl;
 
   const AppUser({
@@ -53,6 +54,7 @@ class AppUser extends Equatable {
     this.paymentMethods = const [],
     this.availableDays = const [],
     this.approximateLocation,
+    this.meetingPoint,
     this.coverPhotoUrl,
   });
 
@@ -87,6 +89,7 @@ class AppUser extends Equatable {
     List<String>? paymentMethods,
     List<String>? availableDays,
     String? approximateLocation,
+    String? meetingPoint,
     String? coverPhotoUrl,
   }) {
     return AppUser(
@@ -113,6 +116,7 @@ class AppUser extends Equatable {
       paymentMethods: paymentMethods ?? this.paymentMethods,
       availableDays: availableDays ?? this.availableDays,
       approximateLocation: approximateLocation ?? this.approximateLocation,
+      meetingPoint: meetingPoint ?? this.meetingPoint,
       coverPhotoUrl: coverPhotoUrl ?? this.coverPhotoUrl,
     );
   }
@@ -142,6 +146,7 @@ class AppUser extends Equatable {
       'paymentMethods': paymentMethods,
       'availableDays': availableDays,
       'approximateLocation': approximateLocation,
+      'meetingPoint': meetingPoint,
       'coverPhotoUrl': coverPhotoUrl,
     };
   }
@@ -176,6 +181,7 @@ class AppUser extends Equatable {
       paymentMethods: strList(data['paymentMethods']),
       availableDays: strList(data['availableDays']),
       approximateLocation: data['approximateLocation'] as String?,
+      meetingPoint: data['meetingPoint'] as String?,
       coverPhotoUrl: data['coverPhotoUrl'] as String?,
     );
   }

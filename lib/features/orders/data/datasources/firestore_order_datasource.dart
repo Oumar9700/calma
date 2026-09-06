@@ -133,12 +133,30 @@ class FirestoreOrderDataSource {
     String orderId,
     OrderStatus newStatus, {
     String? note,
+    String? confirmationCode,
   }) async {
     final data = <String, dynamic>{
       'status': newStatus.name,
       'updatedAt': Timestamp.fromDate(DateTime.now()),
     };
     if (note != null) data['vendorNote'] = note;
+    if (confirmationCode != null) data['confirmationCode'] = confirmationCode;
+
+    // Libère la place dans le créneau si la commande est refusée
+    if (newStatus == OrderStatus.rejected) {
+      final snap = await _orders.doc(orderId).get();
+      final slotId = snap.data()?['slotId'] as String?;
+      if (slotId != null) {
+        final batch = _firestore.batch();
+        batch.update(_orders.doc(orderId), data);
+        batch.update(_slots.doc(slotId), {
+          'bookedQuantity': FieldValue.increment(-1),
+        });
+        await batch.commit();
+        return;
+      }
+    }
+
     await _orders.doc(orderId).update(data);
   }
 
@@ -153,12 +171,38 @@ class FirestoreOrderDataSource {
     await _slots.doc(slotId).update({'isActive': isActive});
   }
 
+  Future<void> deactivateSlotWithCancellations(
+      String slotId, List<String> orderIds) async {
+    final batch = _firestore.batch();
+    for (final id in orderIds) {
+      batch.update(_orders.doc(id), {
+        'status': 'cancelled',
+        'isCancelledBySlotDeactivation': true,
+      });
+    }
+    batch.update(_slots.doc(slotId), {
+      'isActive': false,
+      'bookedQuantity': 0,
+    });
+    await batch.commit();
+  }
+
   Stream<List<PreorderSlot>> watchVendorSlots(String vendorId) {
     return _slots
         .where('vendorId', isEqualTo: vendorId)
         .orderBy('date', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map(_slotFromDoc).toList());
+  }
+
+  Future<int> countPreordersForDate(String dishId, DateTime date) async {
+    final dateStr =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final doc = await _firestore
+        .collection('preorder_counts')
+        .doc('${dishId}__$dateStr')
+        .get();
+    return doc.data()?['count'] as int? ?? 0;
   }
 
   Future<List<PreorderSlot>> fetchAvailableSlots(String dishId) async {
@@ -191,6 +235,11 @@ class FirestoreOrderDataSource {
         'paymentCaptureUrl': o.paymentCaptureUrl,
         'vendorNote': o.vendorNote,
         'lateCancellationCount': o.lateCancellationCount,
+        'confirmationCode': o.confirmationCode,
+        'preorderGroupMinimum': o.preorderGroupMinimum,
+        'preorderGroupClosingTime': o.preorderGroupClosingTime != null
+            ? Timestamp.fromDate(o.preorderGroupClosingTime!)
+            : null,
       };
 
   Order _orderFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -216,6 +265,11 @@ class FirestoreOrderDataSource {
       paymentCaptureUrl: d['paymentCaptureUrl'] as String?,
       vendorNote: d['vendorNote'] as String?,
       lateCancellationCount: d['lateCancellationCount'] as int? ?? 0,
+      confirmationCode: d['confirmationCode'] as String?,
+      preorderGroupMinimum: d['preorderGroupMinimum'] as int?,
+      preorderGroupClosingTime: d['preorderGroupClosingTime'] != null
+          ? (d['preorderGroupClosingTime'] as Timestamp).toDate()
+          : null,
     );
   }
 

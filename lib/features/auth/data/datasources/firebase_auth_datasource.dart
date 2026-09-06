@@ -111,6 +111,7 @@ class FirebaseAuthDataSource {
     List<String>? paymentMethods,
     List<String>? availableDays,
     String? approximateLocation,
+    String? meetingPoint,
     String? coverPhotoUrl,
   }) async {
     final user = _auth.currentUser;
@@ -136,6 +137,7 @@ class FirebaseAuthDataSource {
     if (approximateLocation != null) {
       updates['approximateLocation'] = approximateLocation.trim();
     }
+    if (meetingPoint != null) updates['meetingPoint'] = meetingPoint.trim();
     if (coverPhotoUrl != null) updates['coverPhotoUrl'] = coverPhotoUrl;
 
     if (updates.isNotEmpty) {

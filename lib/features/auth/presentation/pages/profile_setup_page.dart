@@ -32,6 +32,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   final _shopNameController = TextEditingController();
   final _shopDescController = TextEditingController();
   final _locationController = TextEditingController();
+  final _meetingPointController = TextEditingController();
 
   final List<String> _selectedSpecialties = [];
   final List<String> _selectedPaymentMethods = [];
@@ -68,6 +69,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     _shopNameController.dispose();
     _shopDescController.dispose();
     _locationController.dispose();
+    _meetingPointController.dispose();
     super.dispose();
   }
 
@@ -118,6 +120,11 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
           availableDays: role.isVendor ? _selectedDays : null,
           approximateLocation: role.isVendor
               ? _locationController.text.trim()
+              : null,
+          meetingPoint: role.isVendor
+              ? (_meetingPointController.text.trim().isEmpty
+                  ? null
+                  : _meetingPointController.text.trim())
               : null,
         ));
   }
@@ -229,6 +236,13 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     label: 'Localisation approximative',
                     hint: 'Ex : Quartier Villejean, Bus C4',
                     controller: _locationController,
+                    textInputAction: TextInputAction.next,
+                  ),
+                  AppSpacing.gapMd,
+                  AppTextField(
+                    label: 'Point de remise des commandes',
+                    hint: 'Ex : Bât. B entrée principale, Cafet Beaulieu...',
+                    controller: _meetingPointController,
                     textInputAction: TextInputAction.next,
                   ),
                   SizedBox(height: 24.h),

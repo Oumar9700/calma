@@ -67,20 +67,28 @@ service cloud.firestore {
                     && request.resource.data.vendorId == request.auth.uid;
 
       // Modification/suppression : vendeur propriétaire uniquement
-      // Exception : un acheteur peut incrémenter bookedQuantity pour réserver
+      // Exception : un acheteur peut incrémenter (réservation) ou décrémenter (annulation)
       allow update: if request.auth != null && (
         resource.data.vendorId == request.auth.uid
         || (
-          // Acheteur peut seulement incrémenter bookedQuantity (réservation)
           request.auth.uid != resource.data.vendorId
           && request.resource.data.vendorId == resource.data.vendorId
           && request.resource.data.dishId == resource.data.dishId
-          && request.resource.data.bookedQuantity == resource.data.bookedQuantity + 1
+          && (
+            request.resource.data.bookedQuantity == resource.data.bookedQuantity + 1
+            || request.resource.data.bookedQuantity == resource.data.bookedQuantity - 1
+          )
         )
       );
 
       allow delete: if request.auth != null
                     && resource.data.vendorId == request.auth.uid;
+    }
+
+    // ── Compteurs précommandes (lisibles par tous, écrits par Cloud Functions) ─
+    match /preorder_counts/{countId} {
+      allow read: if request.auth != null;
+      allow write: if false; // admin SDK uniquement (Cloud Functions)
     }
 
     // ── Signalements de problèmes ──────────────────────────────────────────

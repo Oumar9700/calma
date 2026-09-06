@@ -14,6 +14,9 @@ class Dish extends Equatable {
   final int? dailyMaxQuantity;
   final bool preorderEnabled;
   final int? preorderDeadlineDays;
+  final int? preorderMinimum;
+  final int? preorderClosingHoursBeforeDate;
+  final List<DateTime> preorderFixedDates;
   final bool directOrderEnabled;
   final int? prepTimeMinutes;
   final bool isActive;
@@ -35,6 +38,9 @@ class Dish extends Equatable {
     this.dailyMaxQuantity,
     this.preorderEnabled = false,
     this.preorderDeadlineDays,
+    this.preorderMinimum,
+    this.preorderClosingHoursBeforeDate,
+    this.preorderFixedDates = const [],
     this.directOrderEnabled = true,
     this.prepTimeMinutes,
     this.isActive = true,
@@ -65,6 +71,9 @@ class Dish extends Equatable {
     int? dailyMaxQuantity,
     bool? preorderEnabled,
     int? preorderDeadlineDays,
+    int? preorderMinimum,
+    int? preorderClosingHoursBeforeDate,
+    List<DateTime>? preorderFixedDates,
     bool? directOrderEnabled,
     int? prepTimeMinutes,
     bool? isActive,
@@ -86,6 +95,9 @@ class Dish extends Equatable {
       dailyMaxQuantity: dailyMaxQuantity ?? this.dailyMaxQuantity,
       preorderEnabled: preorderEnabled ?? this.preorderEnabled,
       preorderDeadlineDays: preorderDeadlineDays ?? this.preorderDeadlineDays,
+      preorderMinimum: preorderMinimum ?? this.preorderMinimum,
+      preorderClosingHoursBeforeDate: preorderClosingHoursBeforeDate ?? this.preorderClosingHoursBeforeDate,
+      preorderFixedDates: preorderFixedDates ?? this.preorderFixedDates,
       directOrderEnabled: directOrderEnabled ?? this.directOrderEnabled,
       prepTimeMinutes: prepTimeMinutes ?? this.prepTimeMinutes,
       isActive: isActive ?? this.isActive,
@@ -100,7 +112,8 @@ class Dish extends Equatable {
   List<Object?> get props => [
         id, vendorId, name, countryOfOrigin, region, description,
         category, photoUrls, price, dailyMaxQuantity, preorderEnabled,
-        preorderDeadlineDays, directOrderEnabled, prepTimeMinutes, isActive,
+        preorderDeadlineDays, preorderMinimum, preorderClosingHoursBeforeDate,
+        preorderFixedDates, directOrderEnabled, prepTimeMinutes, isActive,
         averageRating, reviewCount, availableDays, createdAt,
       ];
 }

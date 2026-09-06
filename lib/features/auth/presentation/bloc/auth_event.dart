@@ -61,6 +61,7 @@ class ProfileUpdateRequested extends AuthEvent {
   final List<String>? paymentMethods;
   final List<String>? availableDays;
   final String? approximateLocation;
+  final String? meetingPoint;
   final String? coverPhotoUrl;
 
   const ProfileUpdateRequested({
@@ -79,6 +80,7 @@ class ProfileUpdateRequested extends AuthEvent {
     this.paymentMethods,
     this.availableDays,
     this.approximateLocation,
+    this.meetingPoint,
     this.coverPhotoUrl,
   });
 }

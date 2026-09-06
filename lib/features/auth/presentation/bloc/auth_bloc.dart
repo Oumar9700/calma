@@ -126,6 +126,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         paymentMethods: event.paymentMethods,
         availableDays: event.availableDays,
         approximateLocation: event.approximateLocation,
+        meetingPoint: event.meetingPoint,
         coverPhotoUrl: event.coverPhotoUrl,
       );
       final updated = current.copyWith(
@@ -144,6 +145,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         paymentMethods: event.paymentMethods,
         availableDays: event.availableDays,
         approximateLocation: event.approximateLocation,
+        meetingPoint: event.meetingPoint,
         coverPhotoUrl: event.coverPhotoUrl,
       );
       emit(ProfileUpdateSuccess(updated));

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,6 +7,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/extensions/build_context_ext.dart';
+import '../../../../di/injection_container.dart';
+import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../domain/entities/order.dart';
 import '../../domain/entities/order_status.dart';
 import '../../domain/entities/order_type.dart';
@@ -58,6 +62,8 @@ class VendorOrderDetailPage extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 16.h),
+              _VendorOrderIdentificationRow(order: order),
+              SizedBox(height: 12.h),
               Row(
                 children: [
                   Expanded(
@@ -224,6 +230,74 @@ class VendorOrderDetailPage extends StatelessWidget {
   }
 }
 
+// ─── Identification commande (côté vendeur) ──────────────────────────────────
+
+class _VendorOrderIdentificationRow extends StatefulWidget {
+  final Order order;
+  const _VendorOrderIdentificationRow({required this.order});
+
+  @override
+  State<_VendorOrderIdentificationRow> createState() =>
+      _VendorOrderIdentificationRowState();
+}
+
+class _VendorOrderIdentificationRowState
+    extends State<_VendorOrderIdentificationRow> {
+  late Future<String?> _buyerNameFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _buyerNameFuture = sl<AuthRepository>()
+        .getUserById(widget.order.buyerId)
+        .then((u) => u?.fullName);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shortId = widget.order.id.length >= 8
+        ? widget.order.id.substring(0, 8).toUpperCase()
+        : widget.order.id.toUpperCase();
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: context.colorSurfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.receipt_outlined, size: 14.r, color: context.colorOnSurfaceVariant),
+          SizedBox(width: 8.w),
+          Text(
+            '#$shortId',
+            style: TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+              color: context.colorOnSurface,
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Icon(Icons.person_outline, size: 14.r, color: context.colorOnSurfaceVariant),
+          SizedBox(width: 4.w),
+          FutureBuilder<String?>(
+            future: _buyerNameFuture,
+            builder: (_, snap) => Text(
+              snap.data ?? '—',
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: context.colorOnSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ActionButtons extends StatelessWidget {
   final Order order;
   const _ActionButtons({required this.order});
@@ -299,24 +373,99 @@ class _ActionButtons extends StatelessWidget {
         return _PrimaryButton(
           label: 'Marquer comme prête',
           onPressed: () {
+            final code = (Random().nextInt(9000) + 1000).toString();
             context.read<VendorOrderBloc>().add(
-                  UpdateOrderStatus(order.id, OrderStatus.ready),
+                  UpdateOrderStatus(
+                    order.id,
+                    OrderStatus.ready,
+                    confirmationCode: code,
+                  ),
                 );
             Navigator.pop(context);
           },
         );
       case OrderStatus.ready:
         return _PrimaryButton(
-          label: 'Marquer comme terminée',
-          onPressed: () {
-            context.read<VendorOrderBloc>().add(
-                  UpdateOrderStatus(order.id, OrderStatus.completed),
-                );
-            Navigator.pop(context);
-          },
+          label: 'Finaliser la remise',
+          onPressed: () => _confirmWithCode(context, order),
         );
       default:
         return const SizedBox.shrink();
+    }
+  }
+
+  Future<void> _confirmWithCode(BuildContext context, Order order) async {
+    final controller = TextEditingController();
+    final bloc = context.read<VendorOrderBloc>();
+    String? errorText;
+    var confirmed = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          title: const Text('Code de remise'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Demandez le code affiché sur l'application de l'acheteur.",
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 10,
+                ),
+                decoration: InputDecoration(
+                  hintText: '0000',
+                  border: const OutlineInputBorder(),
+                  errorText: errorText,
+                  counterText: '',
+                ),
+                onChanged: (_) {
+                  if (errorText != null) {
+                    setStateDialog(() => errorText = null);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
+            ),
+            TextButton(
+              onPressed: () {
+                final input = controller.text.trim();
+                if (input == order.confirmationCode) {
+                  confirmed = true;
+                  Navigator.pop(ctx); // ferme uniquement le dialog
+                } else {
+                  setStateDialog(() => errorText = 'Code incorrect');
+                }
+              },
+              child: const Text('Valider'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    controller.dispose();
+
+    // Après que le dialog est complètement fermé, on agit
+    if (confirmed && context.mounted) {
+      bloc.add(UpdateOrderStatus(order.id, OrderStatus.completed));
+      Navigator.pop(context); // ferme la bottom sheet
     }
   }
 

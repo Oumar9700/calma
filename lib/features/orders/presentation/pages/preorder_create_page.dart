@@ -33,7 +33,13 @@ sealed class _DateOption {
 final class _FreeDate extends _DateOption {
   @override
   final DateTime date;
-  _FreeDate(this.date);
+  final int reservedCount;
+  final DateTime closingTime;
+  final int effectiveMinimum; // minimum du plat, vaut 1 si non défini
+  _FreeDate(this.date,
+      {this.reservedCount = 0,
+      required this.closingTime,
+      this.effectiveMinimum = 1});
 }
 
 final class _SlotDate extends _DateOption {
@@ -82,7 +88,8 @@ class _PreorderCreatePageState extends State<PreorderCreatePage> {
   }
 
   Future<void> _loadOptions() async {
-    final slots = await sl<OrderRepository>()
+    final repo = sl<OrderRepository>();
+    final slots = await repo
         .fetchAvailableSlots(widget.dish.id)
         .catchError((_) => <PreorderSlot>[]);
 
@@ -94,7 +101,23 @@ class _PreorderCreatePageState extends State<PreorderCreatePage> {
       slotOptions.add(_SlotDate(d, s));
     }
 
-    final freeDates = _computeFreeDates(slotDates);
+    final rawFreeDates = _computeFreeDates(slotDates);
+
+    // Charger les compteurs pour toutes les dates libres (affichage count/min)
+    final freeDates = <_FreeDate>[];
+    if (rawFreeDates.isNotEmpty) {
+      final counts = await Future.wait(
+        rawFreeDates.map((fd) => repo.countPreordersForDate(widget.dish.id, fd.date)),
+      );
+      for (var i = 0; i < rawFreeDates.length; i++) {
+        freeDates.add(_FreeDate(
+          rawFreeDates[i].date,
+          reservedCount: counts[i],
+          closingTime: rawFreeDates[i].closingTime,
+          effectiveMinimum: rawFreeDates[i].effectiveMinimum,
+        ));
+      }
+    }
 
     final all = <_DateOption>[...slotOptions, ...freeDates]
       ..sort((a, b) => a.date.compareTo(b.date));
@@ -108,31 +131,34 @@ class _PreorderCreatePageState extends State<PreorderCreatePage> {
   }
 
   List<_FreeDate> _computeFreeDates(Set<DateTime> excludedDates) {
-    const dayMap = {
-      'lundi': 1,
-      'mardi': 2,
-      'mercredi': 3,
-      'jeudi': 4,
-      'vendredi': 5,
-      'samedi': 6,
-      'dimanche': 7,
-    };
+    final dish = widget.dish;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final deadline = widget.dish.preorderDeadlineDays ?? 0;
-    final result = <_FreeDate>[];
+    final deadline = dish.preorderDeadlineDays ?? 1;
+    final closingHours =
+        dish.preorderClosingHoursBeforeDate ?? (deadline * 24);
 
+    final effectiveMin = dish.preorderMinimum ?? 1;
+    _FreeDate buildFreeDate(DateTime date) => _FreeDate(
+          date,
+          closingTime: date.subtract(Duration(hours: closingHours)),
+          effectiveMinimum: effectiveMin,
+        );
+
+    // Calcul depuis les jours de vente
+    const dayMap = {
+      'lundi': 1, 'mardi': 2, 'mercredi': 3, 'jeudi': 4,
+      'vendredi': 5, 'samedi': 6, 'dimanche': 7,
+    };
+    final result = <_FreeDate>[];
     for (var i = 1; i <= 28; i++) {
       final d = now.add(Duration(days: i));
       final date = DateTime(d.year, d.month, d.day);
       if (excludedDates.contains(date)) continue;
-
-      for (final day in widget.dish.availableDays) {
+      for (final day in dish.availableDays) {
         if (dayMap[day] == d.weekday) {
-          final cutoff = date.subtract(Duration(days: deadline));
-          if (!cutoff.isBefore(today)) {
-            result.add(_FreeDate(date));
-          }
+          final cutoff = date.subtract(Duration(hours: closingHours));
+          if (!cutoff.isBefore(today)) result.add(buildFreeDate(date));
           break;
         }
       }
@@ -254,6 +280,12 @@ class _PreorderCreatePageState extends State<PreorderCreatePage> {
       updatedAt: now,
       preorderDate: option.date,
       slotId: option is _SlotDate ? option.slot.id : null,
+      preorderGroupMinimum: option is _FreeDate
+          ? widget.dish.preorderMinimum
+          : null,
+      preorderGroupClosingTime: option is _FreeDate
+          ? option.closingTime
+          : null,
     );
 
     setState(() => _isLoading = true);
@@ -365,11 +397,17 @@ class _PreorderCreatePageState extends State<PreorderCreatePage> {
                                   ),
                                 ),
                               ),
-                              // Badge créneau si date à quota sélectionnée
                               if (_selectedOption is _SlotDate) ...[
                                 SizedBox(width: 8.w),
                                 _QuotaBadge(
                                     slot: (_selectedOption as _SlotDate).slot),
+                              ],
+                              if (_selectedOption is _FreeDate) ...[
+                                SizedBox(width: 8.w),
+                                _GroupBuyBadge(
+                                  reserved: (_selectedOption as _FreeDate).reservedCount,
+                                  minimum: (_selectedOption as _FreeDate).effectiveMinimum,
+                                ),
                               ],
                               SizedBox(width: 4.w),
                               Icon(Icons.chevron_right,
@@ -379,6 +417,15 @@ class _PreorderCreatePageState extends State<PreorderCreatePage> {
                           ),
                         ),
                       ),
+                // Info groupe d'achat quand une date libre est sélectionnée
+                if (_selectedOption is _FreeDate &&
+                    widget.dish.preorderMinimum != null) ...[
+                  SizedBox(height: 10.h),
+                  _GroupBuyInfoBanner(
+                    freeDate: _selectedOption as _FreeDate,
+                    minimum: widget.dish.preorderMinimum!,
+                  ),
+                ],
                 SizedBox(height: 24.h),
                 Text(
                   'Quantité',
@@ -466,7 +513,10 @@ class _PreorderCreatePageState extends State<PreorderCreatePage> {
                           ),
                         )
                       : Text(
-                          'Envoyer la demande — ${total.toStringAsFixed(2)} €',
+                          widget.dish.preorderMinimum != null &&
+                                  _selectedOption is _FreeDate
+                              ? 'Réserver ma place'
+                              : 'Envoyer la demande — ${total.toStringAsFixed(2)} €',
                           style: TextStyle(
                             fontFamily: 'PlusJakartaSans',
                             fontSize: 15.sp,
@@ -502,11 +552,52 @@ class _DateOptionTile extends StatelessWidget {
     final fmt = DateFormat('EEEE d MMMM yyyy', 'fr').format(option.date);
     final isSlot = option is _SlotDate;
     final slot = isSlot ? (option as _SlotDate).slot : null;
+    final isFree = option is _FreeDate;
+    final free = isFree ? option as _FreeDate : null;
+
+    Widget? subtitle;
+    if (isSlot && slot != null) {
+      subtitle = Padding(
+        padding: EdgeInsets.only(top: 4.h),
+        child: Row(
+          children: [
+            Icon(Icons.people_outline, size: 12.w, color: context.colorOnSurfaceVariant),
+            SizedBox(width: 4.w),
+            Text(
+              '${slot.bookedQuantity}/${slot.maxQuantity} réservé${slot.bookedQuantity > 1 ? 's' : ''}',
+              style: TextStyle(fontSize: 11.sp, color: context.colorOnSurfaceVariant),
+            ),
+            SizedBox(width: 8.w),
+            _QuotaBadge(slot: slot),
+          ],
+        ),
+      );
+    } else if (isFree && free != null) {
+      final fmtClosure = DateFormat('d MMM, HH:mm', 'fr').format(free.closingTime);
+      final effectiveMin = free.effectiveMinimum;
+      subtitle = Padding(
+        padding: EdgeInsets.only(top: 4.h),
+        child: Row(
+          children: [
+            Icon(Icons.people_outline, size: 12.w, color: context.colorOnSurfaceVariant),
+            SizedBox(width: 4.w),
+            Text(
+              '${free.reservedCount}/$effectiveMin réservation${effectiveMin > 1 ? 's' : ''}',
+              style: TextStyle(fontSize: 11.sp, color: context.colorOnSurfaceVariant),
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              'Clôture : $fmtClosure',
+              style: TextStyle(fontSize: 11.sp, color: context.colorOnSurfaceVariant),
+            ),
+          ],
+        ),
+      );
+    }
 
     return ListTile(
       onTap: onTap,
-      contentPadding:
-          EdgeInsets.symmetric(horizontal: 20.w, vertical: 2.h),
+      contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 2.h),
       title: Text(
         fmt,
         style: TextStyle(
@@ -515,31 +606,116 @@ class _DateOptionTile extends StatelessWidget {
           color: context.colorOnSurface,
         ),
       ),
-      subtitle: isSlot && slot != null
-          ? Padding(
-              padding: EdgeInsets.only(top: 4.h),
-              child: Row(
-                children: [
-                  Icon(Icons.people_outline,
-                      size: 12.w, color: context.colorOnSurfaceVariant),
-                  SizedBox(width: 4.w),
-                  Text(
-                    '${slot.bookedQuantity}/${slot.maxQuantity} réservé${slot.bookedQuantity > 1 ? 's' : ''}',
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      color: context.colorOnSurfaceVariant,
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  _QuotaBadge(slot: slot),
-                ],
+      subtitle: subtitle,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isSelected)
+            Icon(Icons.check_circle, color: context.colorPrimary, size: 20.w),
+        ],
+      ),
+    );
+  }
+}
+
+// Badge "X/min" pour les group buys — minimum == -1 → mode "compteur seul"
+class _GroupBuyBadge extends StatelessWidget {
+  final int reserved;
+  final int minimum;
+  const _GroupBuyBadge({required this.reserved, required this.minimum});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = minimum > 0 ? '$reserved/$minimum' : '$reserved';
+    final reached = minimum > 0 && reserved >= minimum;
+    final color = reached
+        ? const Color(0xFF22C55E)
+        : context.colorOnSurfaceVariant;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.people_outline, size: 10.r, color: color),
+          SizedBox(width: 3.w),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Bannière d'info groupe d'achat affichée sous la sélection de date
+class _GroupBuyInfoBanner extends StatelessWidget {
+  final _FreeDate freeDate;
+  final int minimum;
+  const _GroupBuyInfoBanner({required this.freeDate, required this.minimum});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmtClosure =
+        DateFormat('EEEE d MMM à HH:mm', 'fr').format(freeDate.closingTime);
+    final reached = freeDate.reservedCount >= minimum;
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: context.colorPrimary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: context.colorPrimary.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.people_outline, size: 14.r, color: context.colorPrimary),
+              SizedBox(width: 6.w),
+              Text(
+                'Groupe d\'achat',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w700,
+                  color: context.colorPrimary,
+                ),
               ),
-            )
-          : null,
-      trailing: isSelected
-          ? Icon(Icons.check_circle,
-              color: context.colorPrimary, size: 20.w)
-          : null,
+              const Spacer(),
+              _GroupBuyBadge(
+                  reserved: freeDate.reservedCount, minimum: minimum),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            reached
+                ? 'Minimum atteint ! Le vendeur peut valider.'
+                : 'Aucun paiement maintenant. Si $minimum réservation${minimum > 1 ? 's sont' : ' est'} atteinte${minimum > 1 ? 's' : ''} avant la clôture, vous recevrez une notification.',
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: context.colorOnSurfaceVariant,
+              height: 1.4,
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            'Clôture : $fmtClosure',
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w600,
+              color: context.colorOnSurface,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

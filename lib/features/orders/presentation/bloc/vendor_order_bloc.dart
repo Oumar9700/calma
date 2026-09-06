@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/order.dart';
+import '../../domain/entities/order_status.dart';
 import '../../domain/entities/preorder_slot.dart';
 import '../../domain/repositories/order_repository.dart';
 import 'order_action_message.dart';
@@ -24,6 +25,8 @@ class VendorOrderBloc extends Bloc<VendorOrderEvent, VendorOrderState> {
     on<UpdateOrderStatus>(_onUpdateOrderStatus);
     on<CreatePreorderSlot>(_onCreatePreorderSlot);
     on<ToggleSlotActive>(_onToggleSlotActive);
+    on<BulkAcceptPreorderGroup>(_onBulkAcceptPreorderGroup);
+    on<DeactivateSlotWithCancellations>(_onDeactivateSlotWithCancellations);
     on<LoadVendorSlots>(_onLoadVendorSlots);
     on<VendorOrdersUpdatedInternal>(_onVendorOrdersUpdated);
     on<VendorOrdersStreamFailedInternal>(_onVendorOrdersStreamFailed);
@@ -91,7 +94,7 @@ class VendorOrderBloc extends Bloc<VendorOrderEvent, VendorOrderState> {
       UpdateOrderStatus event, Emitter<VendorOrderState> emit) async {
     try {
       await _repository.updateOrderStatus(event.orderId, event.status,
-          note: event.note);
+          note: event.note, confirmationCode: event.confirmationCode);
     } catch (e) {
       _actionController.add(
         OrderActionMessage(
@@ -120,6 +123,35 @@ class VendorOrderBloc extends Bloc<VendorOrderEvent, VendorOrderState> {
     try {
       await _repository.toggleSlotActive(event.slotId,
           isActive: event.isActive);
+    } catch (e) {
+      _actionController.add(
+        OrderActionMessage('Erreur : $e', OrderActionResult.error),
+      );
+    }
+  }
+
+  Future<void> _onBulkAcceptPreorderGroup(
+      BulkAcceptPreorderGroup event, Emitter<VendorOrderState> emit) async {
+    try {
+      for (final id in event.orderIds) {
+        await _repository.updateOrderStatus(id, OrderStatus.accepted);
+      }
+      _actionController.add(
+        OrderActionMessage(
+            '${event.orderIds.length} précommande${event.orderIds.length > 1 ? 's validées' : ' validée'}',
+            OrderActionResult.success),
+      );
+    } catch (e) {
+      _actionController.add(
+          OrderActionMessage('Erreur : $e', OrderActionResult.error));
+    }
+  }
+
+  Future<void> _onDeactivateSlotWithCancellations(
+      DeactivateSlotWithCancellations event, Emitter<VendorOrderState> emit) async {
+    try {
+      await _repository.deactivateSlotWithCancellations(
+          event.slotId, event.orderIds);
     } catch (e) {
       _actionController.add(
         OrderActionMessage('Erreur : $e', OrderActionResult.error),

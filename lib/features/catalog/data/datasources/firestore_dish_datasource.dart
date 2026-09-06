@@ -70,6 +70,11 @@ class FirestoreDishDataSource {
         'dailyMaxQuantity': d.dailyMaxQuantity,
         'preorderEnabled': d.preorderEnabled,
         'preorderDeadlineDays': d.preorderDeadlineDays,
+        'preorderMinimum': d.preorderMinimum,
+        'preorderClosingHoursBeforeDate': d.preorderClosingHoursBeforeDate,
+        'preorderFixedDates': d.preorderFixedDates
+            .map((dt) => Timestamp.fromDate(dt))
+            .toList(),
         'directOrderEnabled': d.directOrderEnabled,
         'prepTimeMinutes': d.prepTimeMinutes,
         'isActive': d.isActive,
@@ -94,6 +99,12 @@ class FirestoreDishDataSource {
       dailyMaxQuantity: data['dailyMaxQuantity'] as int?,
       preorderEnabled: data['preorderEnabled'] as bool? ?? false,
       preorderDeadlineDays: data['preorderDeadlineDays'] as int?,
+      preorderMinimum: data['preorderMinimum'] as int?,
+      preorderClosingHoursBeforeDate: data['preorderClosingHoursBeforeDate'] as int?,
+      preorderFixedDates: (data['preorderFixedDates'] as List? ?? [])
+          .cast<Timestamp>()
+          .map((ts) => ts.toDate())
+          .toList(),
       directOrderEnabled: data['directOrderEnabled'] as bool? ?? true,
       prepTimeMinutes: data['prepTimeMinutes'] as int?,
       isActive: data['isActive'] as bool? ?? true,

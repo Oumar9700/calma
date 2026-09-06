@@ -21,6 +21,10 @@ class Order extends Equatable {
   final String? paymentCaptureUrl;
   final String? vendorNote;
   final int lateCancellationCount;
+  final String? confirmationCode;
+  // Group buy (précommande simple avec minimum)
+  final int? preorderGroupMinimum;
+  final DateTime? preorderGroupClosingTime;
 
   const Order({
     required this.id,
@@ -41,6 +45,9 @@ class Order extends Equatable {
     this.paymentCaptureUrl,
     this.vendorNote,
     this.lateCancellationCount = 0,
+    this.confirmationCode,
+    this.preorderGroupMinimum,
+    this.preorderGroupClosingTime,
   });
 
   double get totalPrice => dishPrice * quantity;
@@ -64,6 +71,9 @@ class Order extends Equatable {
     String? paymentCaptureUrl,
     String? vendorNote,
     int? lateCancellationCount,
+    String? confirmationCode,
+    int? preorderGroupMinimum,
+    DateTime? preorderGroupClosingTime,
   }) {
     return Order(
       id: id ?? this.id,
@@ -85,6 +95,10 @@ class Order extends Equatable {
       vendorNote: vendorNote ?? this.vendorNote,
       lateCancellationCount:
           lateCancellationCount ?? this.lateCancellationCount,
+      confirmationCode: confirmationCode ?? this.confirmationCode,
+      preorderGroupMinimum: preorderGroupMinimum ?? this.preorderGroupMinimum,
+      preorderGroupClosingTime:
+          preorderGroupClosingTime ?? this.preorderGroupClosingTime,
     );
   }
 
@@ -108,5 +122,8 @@ class Order extends Equatable {
         paymentCaptureUrl,
         vendorNote,
         lateCancellationCount,
+        confirmationCode,
+        preorderGroupMinimum,
+        preorderGroupClosingTime,
       ];
 }

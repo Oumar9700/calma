@@ -23,23 +23,33 @@ void main() async {
 
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    debugPrint('[BOOT] 1 - bindings ok');
 
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+    debugPrint('[BOOT] 2 - orientation ok');
 
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    debugPrint('[BOOT] 3 - firebase ok');
+
     await setupInjection();
-    await sl<NotificationService>().initialize();
+    debugPrint('[BOOT] 4 - injection ok');
+
+    // Notifications : pas critique au démarrage, on lance sans bloquer
+    sl<NotificationService>().initialize().catchError((e, s) {
+      debugPrint('[NOTIF] init failed: $e');
+    });
+    debugPrint('[BOOT] 5 - notifications launched (async)');
 
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
+      debugPrint('FLUTTER_ERROR: ${details.exceptionAsString()}');
       debugPrint('STACK: ${details.stack}');
     };
 
-    print(">>>>>>>> INIT STATE");
-    
+    debugPrint('[BOOT] 6 - calling runApp');
     runApp(const CalmaApp());
   }, (error, stack) {
     debugPrint('UNCAUGHT: $error');

@@ -44,8 +44,14 @@ class OrderRepositoryImpl implements OrderRepository {
     String orderId,
     OrderStatus newStatus, {
     String? note,
+    String? confirmationCode,
   }) =>
-      _datasource.updateOrderStatus(orderId, newStatus, note: note);
+      _datasource.updateOrderStatus(orderId, newStatus,
+          note: note, confirmationCode: confirmationCode);
+
+  @override
+  Future<int> countPreordersForDate(String dishId, DateTime date) =>
+      _datasource.countPreordersForDate(dishId, date);
 
   @override
   Future<String> createPreorderSlot(PreorderSlot slot) =>
@@ -54,6 +60,10 @@ class OrderRepositoryImpl implements OrderRepository {
   @override
   Future<void> toggleSlotActive(String slotId, {required bool isActive}) =>
       _datasource.toggleSlotActive(slotId, isActive: isActive);
+
+  @override
+  Future<void> deactivateSlotWithCancellations(String slotId, List<String> orderIds) =>
+      _datasource.deactivateSlotWithCancellations(slotId, orderIds);
 
   @override
   Stream<List<PreorderSlot>> watchVendorSlots(String vendorId) =>

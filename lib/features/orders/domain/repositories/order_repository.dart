@@ -18,11 +18,14 @@ abstract class OrderRepository {
     String orderId,
     OrderStatus newStatus, {
     String? note,
+    String? confirmationCode,
   });
 
   // ── Preorder slots (vendor) ───────────────────────────────────────────────
+  Future<int> countPreordersForDate(String dishId, DateTime date);
   Future<String> createPreorderSlot(PreorderSlot slot);
   Future<void> toggleSlotActive(String slotId, {required bool isActive});
+  Future<void> deactivateSlotWithCancellations(String slotId, List<String> orderIds);
   Stream<List<PreorderSlot>> watchVendorSlots(String vendorId);
   Future<List<PreorderSlot>> fetchAvailableSlots(String dishId);
 }

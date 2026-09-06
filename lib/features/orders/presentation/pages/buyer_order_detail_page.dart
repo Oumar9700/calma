@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/extensions/build_context_ext.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../di/injection_container.dart';
+import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../domain/entities/order.dart';
 import '../../domain/entities/order_status.dart';
 import '../../domain/entities/order_type.dart';
@@ -121,6 +122,9 @@ class _OrderDetailContentState extends State<_OrderDetailContent> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Identification commande + noms
+              _OrderIdentificationCard(order: order),
+              SizedBox(height: 16.h),
               // Photo
               if (order.dishPhotoUrl != null) ...[
                 ClipRRect(
@@ -219,7 +223,29 @@ class _OrderDetailContentState extends State<_OrderDetailContent> {
               ),
               SizedBox(height: 12.h),
               StatusTimeline(currentStatus: order.status),
-              SizedBox(height: 24.h),
+              SizedBox(height: 16.h),
+              // Progression group buy — visible quand en attente
+              if (order.status == OrderStatus.pending &&
+                  order.type == OrderType.preorder &&
+                  order.slotId == null &&
+                  order.preorderGroupMinimum != null) ...[
+                _GroupBuyProgressCard(order: order),
+                SizedBox(height: 16.h),
+              ],
+              SizedBox(height: 8.h),
+              // Point de remise — visible dès acceptation
+              if (order.status == OrderStatus.accepted ||
+                  order.status == OrderStatus.preparing ||
+                  order.status == OrderStatus.ready) ...[
+                _MeetingPointCard(vendorId: order.vendorId),
+                SizedBox(height: 16.h),
+              ],
+              // Code de confirmation — visible quand la commande est prête
+              if (order.status == OrderStatus.ready &&
+                  order.confirmationCode != null) ...[
+                _ConfirmationCodeCard(code: order.confirmationCode!),
+                SizedBox(height: 16.h),
+              ],
               // Payment section — contextual per status
               _PaymentSection(
                 order: order,
@@ -734,5 +760,311 @@ class _ReportButton extends StatelessWidget {
       });
     }
     controller.dispose();
+  }
+}
+
+// ─── Identification commande ────────────────────────────────────────────────
+
+class _OrderIdentificationCard extends StatefulWidget {
+  final Order order;
+  const _OrderIdentificationCard({required this.order});
+
+  @override
+  State<_OrderIdentificationCard> createState() =>
+      _OrderIdentificationCardState();
+}
+
+class _OrderIdentificationCardState extends State<_OrderIdentificationCard> {
+  late Future<String?> _vendorNameFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _vendorNameFuture = sl<AuthRepository>()
+        .getUserById(widget.order.vendorId)
+        .then((u) => u?.shopName ?? u?.fullName);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shortId = widget.order.id.length >= 8
+        ? widget.order.id.substring(0, 8).toUpperCase()
+        : widget.order.id.toUpperCase();
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: context.colorSurfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '#$shortId',
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                    color: context.colorOnSurface,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                FutureBuilder<String?>(
+                  future: _vendorNameFuture,
+                  builder: (_, snap) {
+                    final name = snap.data ?? '—';
+                    return Text(
+                      'Boutique : $name',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: context.colorOnSurfaceVariant,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.qr_code_outlined, size: 20.w, color: context.colorOnSurfaceVariant),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Progression group buy (côté acheteur) ──────────────────────────────────
+
+class _GroupBuyProgressCard extends StatefulWidget {
+  final Order order;
+  const _GroupBuyProgressCard({required this.order});
+
+  @override
+  State<_GroupBuyProgressCard> createState() => _GroupBuyProgressCardState();
+}
+
+class _GroupBuyProgressCardState extends State<_GroupBuyProgressCard> {
+  late Future<int> _countFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _countFuture = sl<OrderRepository>().countPreordersForDate(
+      widget.order.dishId,
+      widget.order.preorderDate ?? DateTime.now(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final minimum = widget.order.preorderGroupMinimum ?? 1;
+    final closingTime = widget.order.preorderGroupClosingTime;
+    final fmtClosure = closingTime != null
+        ? DateFormat('EEEE d MMM à HH:mm', 'fr').format(closingTime)
+        : null;
+
+    return FutureBuilder<int>(
+      future: _countFuture,
+      builder: (context, snap) {
+        final count = snap.data ?? 0;
+        final reached = count >= minimum;
+        final color = reached ? const Color(0xFF22C55E) : context.colorPrimary;
+
+        return Container(
+          padding: EdgeInsets.all(14.w),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.people_outline, size: 14.r, color: color),
+                  SizedBox(width: 6.w),
+                  Text(
+                    'Groupe d\'achat',
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Text(
+                      '$count/$minimum',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                reached
+                    ? 'Minimum atteint — en attente de validation du vendeur.'
+                    : 'En attente que $minimum réservation${minimum > 1 ? 's soient atteintes' : ' soit atteinte'} pour valider le groupe.',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: context.colorOnSurface,
+                  height: 1.4,
+                ),
+              ),
+              if (fmtClosure != null) ...[
+                SizedBox(height: 6.h),
+                Text(
+                  'Clôture : $fmtClosure',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w600,
+                    color: context.colorOnSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─── Point de remise ────────────────────────────────────────────────────────
+
+class _MeetingPointCard extends StatefulWidget {
+  final String vendorId;
+  const _MeetingPointCard({required this.vendorId});
+
+  @override
+  State<_MeetingPointCard> createState() => _MeetingPointCardState();
+}
+
+class _MeetingPointCardState extends State<_MeetingPointCard> {
+  late Future<String?> _meetingPointFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _meetingPointFuture = sl<AuthRepository>()
+        .getUserById(widget.vendorId)
+        .then((u) => u?.meetingPoint);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: _meetingPointFuture,
+      builder: (context, snap) {
+        final point = snap.data;
+        if (point == null || point.isEmpty) return const SizedBox.shrink();
+        return Container(
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: context.colorSurface,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: context.colorBorder),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.place_outlined, size: 20.r, color: context.colorPrimary),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Point de remise',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: context.colorOnSurfaceVariant,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      point,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w500,
+                        color: context.colorOnSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─── Code de confirmation ────────────────────────────────────────────────────
+
+class _ConfirmationCodeCard extends StatelessWidget {
+  final String code;
+  const _ConfirmationCodeCard({required this.code});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
+      decoration: BoxDecoration(
+        color: context.colorPrimary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: context.colorPrimary.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Code de remise',
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+              color: context.colorPrimary,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            code,
+            style: TextStyle(
+              fontSize: 40.sp,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 12,
+              color: context.colorOnSurface,
+              fontFamily: 'monospace',
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            'Communiquez ce code au vendeur lors de la remise.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: context.colorOnSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

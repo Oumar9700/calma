@@ -45,6 +45,9 @@ class _ConfirmationContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPreorder = order.type == OrderType.preorder;
+    final isGroupBuy = isPreorder &&
+        order.slotId == null &&
+        order.preorderGroupMinimum != null;
     final dateStr = DateFormat('dd/MM/yyyy', 'fr').format(order.createdAt);
 
     return Scaffold(
@@ -69,7 +72,7 @@ class _ConfirmationContent extends StatelessWidget {
               ),
               SizedBox(height: 24.h),
               Text(
-                'Commande envoyée !',
+                isGroupBuy ? 'Réservation enregistrée !' : 'Commande envoyée !',
                 style: TextStyle(
                   fontFamily: 'PlusJakartaSans',
                   fontSize: 24.sp,
@@ -79,7 +82,9 @@ class _ConfirmationContent extends StatelessWidget {
               ),
               SizedBox(height: 8.h),
               Text(
-                'En attente d\'acceptation du vendeur',
+                isGroupBuy
+                    ? 'Votre place est réservée. Aucun paiement maintenant.'
+                    : 'En attente d\'acceptation du vendeur',
                 style: TextStyle(
                   fontSize: 14.sp,
                   color: context.colorOnSurfaceVariant,
@@ -89,7 +94,9 @@ class _ConfirmationContent extends StatelessWidget {
               SizedBox(height: 32.h),
               _OrderSummaryCard(order: order, dateStr: dateStr),
               SizedBox(height: 16.h),
-              _NextStepTip(isPreorder: isPreorder),
+              isGroupBuy
+                  ? _GroupBuyNextStepTip(order: order)
+                  : _NextStepTip(isPreorder: isPreorder),
               SizedBox(height: 32.h),
               FilledButton(
                 onPressed: () => context.go(AppRoutes.orders),
@@ -273,6 +280,7 @@ class _Row extends StatelessWidget {
   final TextStyle? valueStyle;
 
   const _Row({required this.label, required this.value, this.valueStyle});
+  // ignore: unused_element — présent pour symétrie future
 
   @override
   Widget build(BuildContext context) {
@@ -299,6 +307,75 @@ class _Row extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _GroupBuyNextStepTip extends StatelessWidget {
+  final Order order;
+  const _GroupBuyNextStepTip({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    final minimum = order.preorderGroupMinimum ?? 1;
+    final closingTime = order.preorderGroupClosingTime;
+    final fmtClosure = closingTime != null
+        ? DateFormat('EEEE d MMM à HH:mm', 'fr').format(closingTime)
+        : null;
+
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: context.colorPrimary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12.r),
+        border:
+            Border.all(color: context.colorPrimary.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.tips_and_updates_outlined,
+                  size: 14.w, color: context.colorPrimary),
+              SizedBox(width: 6.w),
+              Text(
+                'Groupe d\'achat',
+                style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w700,
+                  color: context.colorPrimary,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          _TipRow(
+            icon: Icons.money_off_outlined,
+            text: 'Aucun paiement maintenant — votre place est réservée.',
+          ),
+          SizedBox(height: 6.h),
+          _TipRow(
+            icon: Icons.people_outline,
+            text:
+                'Si $minimum réservation${minimum > 1 ? 's sont atteintes' : ' est atteinte'}${fmtClosure != null ? ' avant $fmtClosure' : ''}, vous recevrez une notification pour payer.',
+          ),
+          SizedBox(height: 6.h),
+          _TipRow(
+            icon: Icons.cancel_outlined,
+            text:
+                'Si le minimum n\'est pas atteint à la clôture, votre réservation est annulée automatiquement.',
+          ),
+          if (fmtClosure != null) ...[
+            SizedBox(height: 6.h),
+            _TipRow(
+              icon: Icons.access_time_outlined,
+              text: 'Clôture : $fmtClosure',
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
