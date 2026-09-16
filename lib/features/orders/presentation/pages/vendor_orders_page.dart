@@ -72,7 +72,7 @@ class _VendorOrdersPageState extends State<VendorOrdersPage>
           controller: _tabController,
           tabs: const [
             Tab(text: 'Commandes'),
-            Tab(text: 'Créneaux'),
+            Tab(text: 'Créneaux libres'),
           ],
         ),
       ),
@@ -489,8 +489,7 @@ class _PlanningTab extends StatelessWidget {
               SizedBox(width: 10.w),
               Expanded(
                 child: Text(
-                  'Un créneau = une date où vous préparez un plat en quantité limitée. '
-                  'Les acheteurs voient vos créneaux et réservent à l\'avance.\n'
+                  'Un créneau = une date non prévue (spontanée) où vous mettez un plat en précommande.\n'
                   'Appuyez sur + pour créer un nouveau créneau.',
                   style: TextStyle(
                     fontSize: 12.sp,

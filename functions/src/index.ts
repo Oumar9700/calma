@@ -4,6 +4,7 @@ import {
   onDocumentUpdated,
 } from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
+import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 
 admin.initializeApp();
@@ -107,7 +108,7 @@ export const onOrderCreated = onDocumentCreated(
     ) {
       const d = data.preorderDate.toDate();
       const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const dd = String(d.getDate()).padStart(2, "0");
+      const dd = String(d.getDate() + 1).padStart(2, "0");
       const dateStr = `${d.getFullYear()}-${mm}-${dd}`;
       await db
         .collection("preorder_counts")
@@ -520,5 +521,55 @@ export const preorderMinimumCheck = onSchedule(
       // eslint-disable-next-line max-len
       `Minimum check: ${cancelled} annulees, ${promises.length} rappels vendeur`
     );
+  }
+);
+
+// ── Backfill preorder_counts (one-shot, admin only) ──────────────────────────
+// Appeler via Firebase console ou SDK admin une seule fois après déploiement.
+export const backfillPreorderCounts = onCall(
+  {region: "europe-west1"},
+  async (request) => {
+    // Sécurité : réservé aux admins (à supprimer après usage)
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Auth required");
+    }
+
+    const snap = await db
+      .collection("orders")
+      .where("type", "==", "preorder")
+      .where("status", "!=", "cancelled")
+      .get();
+
+    // Compter par (dishId, date)
+    const counts = new Map<string, number>();
+    for (const doc of snap.docs) {
+      const d = doc.data();
+      const dishId = d.dishId as string | undefined;
+      const slotId = d.slotId as string | undefined;
+      const preorderDate = d.preorderDate as
+        | admin.firestore.Timestamp | undefined;
+      if (!dishId || slotId || !preorderDate) continue;
+
+      const date = preorderDate.toDate();
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      const dateStr = `${date.getFullYear()}-${mm}-${dd}`;
+      const key = `${dishId}__${dateStr}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+
+    // Écrire les compteurs
+    const batch = db.batch();
+    for (const [key, count] of counts) {
+      batch.set(
+        db.collection("preorder_counts").doc(key),
+        {count},
+        {merge: false}
+      );
+    }
+    await batch.commit();
+
+    console.log(`Backfill: ${counts.size} compteurs mis à jour`);
+    return {updated: counts.size};
   }
 );

@@ -448,7 +448,9 @@ class _ActionButtons extends StatelessWidget {
                 final input = controller.text.trim();
                 if (input == order.confirmationCode) {
                   confirmed = true;
+                  bloc.add(UpdateOrderStatus(order.id, OrderStatus.completed));
                   Navigator.pop(ctx); // ferme uniquement le dialog
+                  Navigator.pop(context); // ferme la bottom sheet
                 } else {
                   setStateDialog(() => errorText = 'Code incorrect');
                 }
@@ -460,13 +462,6 @@ class _ActionButtons extends StatelessWidget {
       ),
     );
 
-    controller.dispose();
-
-    // Après que le dialog est complètement fermé, on agit
-    if (confirmed && context.mounted) {
-      bloc.add(UpdateOrderStatus(order.id, OrderStatus.completed));
-      Navigator.pop(context); // ferme la bottom sheet
-    }
   }
 
   Future<void> _rejectWithReason(BuildContext context) async {

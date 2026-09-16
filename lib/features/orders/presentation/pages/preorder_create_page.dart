@@ -258,7 +258,7 @@ class _PreorderCreatePageState extends State<PreorderCreatePage> {
     if (authState is! Authenticated) return;
     final option = _selectedOption;
     if (option == null) return;
-
+    
     final now = DateTime.now();
     final order = Order(
       id: '',
