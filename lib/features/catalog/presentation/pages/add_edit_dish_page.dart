@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/extensions/build_context_ext.dart';
@@ -38,15 +37,14 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
   final _priceCtrl = TextEditingController();
   final _prepCtrl = TextEditingController();
   final _maxQtyCtrl = TextEditingController();
-  final _countryCtrl = TextEditingController();
   final _regionCtrl = TextEditingController();
-  final _deadlineDaysCtrl = TextEditingController();
   final _preorderMinimumCtrl = TextEditingController();
   final _preorderClosingHoursCtrl = TextEditingController();
 
+  String? _selectedCountry;
   DishCategory _category = DishCategory.mainDish;
-  bool _preorderEnabled = false;
-  bool _directOrderEnabled = true;
+  bool _preorderEnabled = true;
+  bool _directOrderEnabled = false;
   bool _isActive = true;
   List<String> _availableDays = [];
   List<String> _photoUrls = [];
@@ -58,6 +56,8 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
   @override
   void initState() {
     super.initState();
+    _preorderMinimumCtrl.text = '1';
+
     final d = widget.dish;
     if (d != null) {
       _nameCtrl.text = d.name;
@@ -65,25 +65,24 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
       _priceCtrl.text = d.price.toString();
       _prepCtrl.text = d.prepTimeMinutes?.toString() ?? '';
       _maxQtyCtrl.text = d.dailyMaxQuantity?.toString() ?? '';
-      _countryCtrl.text = d.countryOfOrigin ?? '';
+      _selectedCountry = d.countryOfOrigin;
       _regionCtrl.text = d.region ?? '';
       _category = d.category;
       _preorderEnabled = d.preorderEnabled;
-      _deadlineDaysCtrl.text = d.preorderDeadlineDays?.toString() ?? '';
-      _preorderMinimumCtrl.text = d.preorderMinimum?.toString() ?? '';
-      _preorderClosingHoursCtrl.text = d.preorderClosingHoursBeforeDate?.toString() ?? '';
+      _preorderMinimumCtrl.text = (d.preorderMinimum ?? 1).toString();
+      _preorderClosingHoursCtrl.text =
+          d.preorderClosingHoursBeforeDate?.toString() ?? '';
       _directOrderEnabled = d.directOrderEnabled;
       _isActive = d.isActive;
       _availableDays = List.from(d.availableDays);
       _photoUrls = List.from(d.photoUrls);
     }
 
-    // Dans AddEditDishPage, simplifie le listener :
     _actionSub = context.read<DishBloc>().actionMessages.listen((msg) {
       if (!mounted || !_saving) return;
       setState(() => _saving = false);
       if (msg.result == DishActionResult.success) {
-        context.pop(); // pas de snackbar ici, VendorCatalogPage s'en charge déjà
+        context.pop();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(msg.text), backgroundColor: AppColors.error),
@@ -99,9 +98,7 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
     _priceCtrl.dispose();
     _prepCtrl.dispose();
     _maxQtyCtrl.dispose();
-    _countryCtrl.dispose();
     _regionCtrl.dispose();
-    _deadlineDaysCtrl.dispose();
     _preorderMinimumCtrl.dispose();
     _preorderClosingHoursCtrl.dispose();
     _actionSub?.cancel();
@@ -121,7 +118,8 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
 
     setState(() => _uploading = true);
     try {
-      final dishId = widget.dish?.id ?? 'new_${DateTime.now().millisecondsSinceEpoch}';
+      final dishId = widget.dish?.id ??
+          'new_${DateTime.now().millisecondsSinceEpoch}';
       final url = await sl<StorageService>().uploadDishPhoto(
         authState.user.uid,
         dishId,
@@ -146,9 +144,19 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
+
+    if (!_preorderEnabled && !_directOrderEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Activez au moins un mode de commande.'),
+        ),
+      );
+      return;
+    }
+
     if (_availableDays.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sélectionnez au moins un jour de vente.')),
+        const SnackBar(content: Text('Sélectionnez au moins un jour.')),
       );
       return;
     }
@@ -156,30 +164,35 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
     final authState = context.read<AuthBloc>().state;
     if (authState is! Authenticated) return;
 
+    // Délai calculé automatiquement depuis les heures de clôture
+    final closingHours =
+        int.tryParse(_preorderClosingHoursCtrl.text.trim());
+    final deadlineDays =
+        closingHours != null ? (closingHours / 24).ceil() : null;
+
     final dish = Dish(
       id: widget.dish?.id ?? '',
       vendorId: authState.user.uid,
       name: _nameCtrl.text.trim(),
-      description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-      countryOfOrigin:
-          _countryCtrl.text.trim().isEmpty ? null : _countryCtrl.text.trim(),
-      region: _regionCtrl.text.trim().isEmpty ? null : _regionCtrl.text.trim(),
+      description:
+          _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+      countryOfOrigin: _selectedCountry,
+      region:
+          _regionCtrl.text.trim().isEmpty ? null : _regionCtrl.text.trim(),
       category: _category,
       photoUrls: _photoUrls,
       price: double.parse(_priceCtrl.text.trim().replaceAll(',', '.')),
-      prepTimeMinutes: _prepCtrl.text.isEmpty ? null : int.tryParse(_prepCtrl.text),
+      prepTimeMinutes:
+          _prepCtrl.text.isEmpty ? null : int.tryParse(_prepCtrl.text),
       dailyMaxQuantity:
           _maxQtyCtrl.text.isEmpty ? null : int.tryParse(_maxQtyCtrl.text),
       preorderEnabled: _preorderEnabled,
-      preorderDeadlineDays: _preorderEnabled && _deadlineDaysCtrl.text.trim().isNotEmpty
-          ? int.tryParse(_deadlineDaysCtrl.text.trim())
+      preorderDeadlineDays: _preorderEnabled ? deadlineDays : null,
+      preorderMinimum: _preorderEnabled
+          ? (int.tryParse(_preorderMinimumCtrl.text.trim()) ?? 1)
           : null,
-      preorderMinimum: _preorderEnabled && _preorderMinimumCtrl.text.trim().isNotEmpty
-          ? int.tryParse(_preorderMinimumCtrl.text.trim())
-          : null,
-      preorderClosingHoursBeforeDate: _preorderEnabled && _preorderClosingHoursCtrl.text.trim().isNotEmpty
-          ? int.tryParse(_preorderClosingHoursCtrl.text.trim())
-          : null,
+      preorderClosingHoursBeforeDate:
+          _preorderEnabled ? closingHours : null,
       preorderFixedDates: const [],
       directOrderEnabled: _directOrderEnabled,
       isActive: _isActive,
@@ -200,11 +213,14 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
 
   @override
   Widget build(BuildContext context) {
+    final anyModeActive = _preorderEnabled || _directOrderEnabled;
+
     return AppScaffold(
       body: Form(
         key: _formKey,
         child: CustomScrollView(
           slivers: [
+            // ── Header ──────────────────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 0),
@@ -229,17 +245,22 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
                 ),
               ),
             ),
+
             SliverPadding(
               padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 40.h),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
+                  // ── Photos ────────────────────────────────────────────────
                   _PhotoPicker(
                     photoUrls: _photoUrls,
                     uploading: _uploading,
                     onAdd: _pickPhoto,
-                    onRemove: (url) => setState(() => _photoUrls.remove(url)),
+                    onRemove: (url) =>
+                        setState(() => _photoUrls.remove(url)),
                   ),
                   SizedBox(height: 24.h),
+
+                  // ── Informations ─────────────────────────────────────────
                   _SectionLabel('Informations'),
                   SizedBox(height: 12.h),
                   AppTextField(
@@ -265,10 +286,10 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
                   Row(
                     children: [
                       Expanded(
-                        child: AppTextField(
-                          label: 'Pays d\'origine',
-                          hint: 'Ex: Bénin',
-                          controller: _countryCtrl,
+                        child: _CountryPickerField(
+                          value: _selectedCountry,
+                          onSelected: (c) =>
+                              setState(() => _selectedCountry = c),
                         ),
                       ),
                       SizedBox(width: 12.w),
@@ -282,7 +303,9 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
                     ],
                   ),
                   SizedBox(height: 24.h),
-                  _SectionLabel('Prix & disponibilité'),
+
+                  // ── Prix ─────────────────────────────────────────────────
+                  _SectionLabel('Prix & préparation'),
                   SizedBox(height: 12.h),
                   Row(
                     children: [
@@ -291,12 +314,14 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
                           label: 'Prix (€) *',
                           hint: '0.00',
                           controller: _priceCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
+                          keyboardType:
+                              const TextInputType.numberWithOptions(
+                                  decimal: true),
                           validator: (v) {
                             if (v == null || v.isEmpty) return 'Requis';
-                            if (double.tryParse(v.replaceAll(',', '.')) == null) {
+                            if (double.tryParse(
+                                    v.replaceAll(',', '.')) ==
+                                null) {
                               return 'Invalide';
                             }
                             return null;
@@ -314,73 +339,211 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 16.h),
-                  AppTextField(
-                    label: 'Quantité max / jour',
-                    hint: 'Laisser vide = illimité',
-                    controller: _maxQtyCtrl,
-                    keyboardType: TextInputType.number,
+                  SizedBox(height: 24.h),
+
+                  // ── Section Précommande ────────────────────────────────
+                  _OrderSectionCard(
+                    title: 'Précommande',
+                    enabled: _preorderEnabled,
+                    accentColor: context.colorPrimary,
+                    onToggle: (v) => setState(() => _preorderEnabled = v),
+                    children: [
+                      // Minimum
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Minimum de précommandes',
+                              hint: '1',
+                              controller: _preorderMinimumCtrl,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          _HelpIcon(
+                            title: 'Minimum de groupe',
+                            message:
+                                'Le nombre minimum de réservations à atteindre avant que vous puissiez valider. '
+                                'À 1 (défaut), vous acceptez chaque précommande individuellement. '
+                                'À 3, il faudra au moins 3 réservations sur la même date pour que vous validiez le groupe.',
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 14.h),
+
+                      // Clôture
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Clôture des réservations (heures)',
+                              hint: 'Ex: 24',
+                              controller: _preorderClosingHoursCtrl,
+                              keyboardType: TextInputType.number,
+                              suffixIcon: Padding(
+                                padding: EdgeInsets.only(right: 10.w),
+                                child: Text(
+                                  'h',
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    color: context.colorOnSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          _HelpIcon(
+                            title: 'Clôture des réservations',
+                            message:
+                                'Nombre d\'heures avant la date de livraison à partir duquel vous n\'acceptez plus de nouvelles réservations. '
+                                'Cela vous laisse le temps de préparer et livrer à temps. '
+                                'Ex: 24h = les réservations ferment la veille de la livraison.',
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 14.h),
+
+                      // Jours de précommande
+                      Row(
+                        children: [
+                          Text(
+                            'Jours de précommande / livraison',
+                            style: TextStyle(
+                              fontFamily: 'PlusJakartaSans',
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w500,
+                              color: context.colorOnSurface,
+                            ),
+                          ),
+                          SizedBox(width: 6.w),
+                          _HelpIcon(
+                            title: 'Jours de précommande',
+                            message:
+                                'Les jours où vous livrez / remettez les plats aux clients. '
+                                'Ces jours apparaîtront automatiquement sur le formulaire de réservation pour que le client choisisse sa date de livraison.',
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10.h),
+                      _DayPicker(
+                        selected: _availableDays,
+                        onToggle: (day) => setState(() {
+                          if (_availableDays.contains(day)) {
+                            _availableDays.remove(day);
+                          } else {
+                            _availableDays.add(day);
+                          }
+                        }),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 16.h),
-                  _SwitchRow(
-                    label: 'Commande directe activée',
-                    value: _directOrderEnabled,
-                    onChanged: (v) => setState(() => _directOrderEnabled = v),
+                  SizedBox(height: 14.h),
+
+                  // ── Section Commande directe ───────────────────────────
+                  _OrderSectionCard(
+                    title: 'Commande directe',
+                    enabled: _directOrderEnabled,
+                    accentColor: AppColors.secondary,
+                    onToggle: (v) =>
+                        setState(() => _directOrderEnabled = v),
+                    children: [
+                      // Jours de commande directe
+                      Row(
+                        children: [
+                          Text(
+                            'Jours de commande directe',
+                            style: TextStyle(
+                              fontFamily: 'PlusJakartaSans',
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w500,
+                              color: context.colorOnSurface,
+                            ),
+                          ),
+                          SizedBox(width: 6.w),
+                          _HelpIcon(
+                            title: 'Commandes directes',
+                            message:
+                                'Jours où vous acceptez des commandes spontanées sur le moment. '
+                                'Le client commande aujourd\'hui et peut récupérer son plat dans la journée. '
+                                'Le bouton "Commander" ne s\'affichera sur votre plat que les jours sélectionnés ici.',
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10.h),
+                      _DayPicker(
+                        selected: _availableDays,
+                        onToggle: (day) => setState(() {
+                          if (_availableDays.contains(day)) {
+                            _availableDays.remove(day);
+                          } else {
+                            _availableDays.add(day);
+                          }
+                        }),
+                      ),
+                      SizedBox(height: 14.h),
+
+                      // Quantité max / jour
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              label: 'Quantité max / jour (optionnel)',
+                              hint: 'Laisser vide = illimité',
+                              controller: _maxQtyCtrl,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          _HelpIcon(
+                            title: 'Limite quotidienne',
+                            message:
+                                'Nombre maximum de commandes directes que vous acceptez par jour. '
+                                'Une fois atteint, le plat n\'accepte plus de commandes pour ce jour. '
+                                'Laissez vide pour ne pas limiter.',
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 12.h),
-                  _SwitchRow(
-                    label: 'Précommande activée',
-                    value: _preorderEnabled,
-                    onChanged: (v) => setState(() {
-                      _preorderEnabled = v;
-                      if (!v) _deadlineDaysCtrl.clear();
-                    }),
-                  ),
-                  if (_preorderEnabled) ...[
-                    SizedBox(height: 10.h),
-                    AppTextField(
-                      label: 'Délai de réservation (jours avant livraison)',
-                      hint: 'Ex: 1 = commander au moins 1 jour avant',
-                      controller: _deadlineDaysCtrl,
-                      keyboardType: TextInputType.number,
+                  SizedBox(height: 14.h),
+
+                  // Note si les deux modes actifs et jours partagés
+                  if (anyModeActive && _preorderEnabled && _directOrderEnabled)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 14.h),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 14.w,
+                            color: context.colorOnSurfaceVariant,
+                          ),
+                          SizedBox(width: 6.w),
+                          Expanded(
+                            child: Text(
+                              'Les jours sélectionnés s\'appliquent aux deux modes de commande.',
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                color: context.colorOnSurfaceVariant,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    SizedBox(height: 10.h),
-                    AppTextField(
-                      label: 'Minimum de précommandes (optionnel)',
-                      hint: 'Ex: 3 = au moins 3 commandes requises',
-                      controller: _preorderMinimumCtrl,
-                      keyboardType: TextInputType.number,
-                    ),
-                    SizedBox(height: 10.h),
-                    AppTextField(
-                      label: 'Clôture des réservations (heures avant livraison)',
-                      hint: 'Ex: 24 = ferme 24h avant. Défaut : 24h',
-                      controller: _preorderClosingHoursCtrl,
-                      keyboardType: TextInputType.number,
-                    ),
-                  ],
-                  SizedBox(height: 12.h),
+
+                  // ── Plat actif ───────────────────────────────────────────
                   _SwitchRow(
                     label: 'Plat actif',
+                    subtitle: 'Visible dans le catalogue',
                     value: _isActive,
                     onChanged: (v) => setState(() => _isActive = v),
                   ),
-                  SizedBox(height: 24.h),
-                  _SectionLabel('Jours de vente *'),
-                  SizedBox(height: 12.h),
-                  _DayPicker(
-                    selected: _availableDays,
-                    onToggle: (day) {
-                      setState(() {
-                        if (_availableDays.contains(day)) {
-                          _availableDays.remove(day);
-                        } else {
-                          _availableDays.add(day);
-                        }
-                      });
-                    },
-                  ),
                   SizedBox(height: 32.h),
+
+                  // ── CTA ──────────────────────────────────────────────────
                   AppButton.primary(
                     label: widget.isEditing ? 'Enregistrer' : 'Ajouter le plat',
                     isLoading: _saving,
@@ -396,6 +559,8 @@ class _AddEditDishPageState extends State<AddEditDishPage> {
   }
 }
 
+// ── Widgets internes ─────────────────────────────────────────────────────────
+
 class _SectionLabel extends StatelessWidget {
   final String text;
   const _SectionLabel(this.text);
@@ -410,6 +575,473 @@ class _SectionLabel extends StatelessWidget {
         fontWeight: FontWeight.w600,
         letterSpacing: 1.2,
         color: context.colorOnSurfaceVariant,
+      ),
+    );
+  }
+}
+
+// Card expandable pour un mode de commande
+class _OrderSectionCard extends StatelessWidget {
+  final String title;
+  final bool enabled;
+  final Color accentColor;
+  final ValueChanged<bool> onToggle;
+  final List<Widget> children;
+
+  const _OrderSectionCard({
+    required this.title,
+    required this.enabled,
+    required this.accentColor,
+    required this.onToggle,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: context.colorSurface,
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(
+          color: enabled
+              ? accentColor.withValues(alpha: 0.35)
+              : context.colorBorder.withValues(alpha: 0.5),
+          width: enabled ? 1.5 : 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header avec switch
+          Padding(
+            padding:
+                EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+            child: Row(
+              children: [
+                Container(
+                  width: 8.w,
+                  height: 8.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: enabled
+                        ? accentColor
+                        : context.colorBorder,
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: enabled
+                          ? context.colorOnSurface
+                          : context.colorOnSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Switch(
+                  value: enabled,
+                  onChanged: onToggle,
+                  activeThumbColor: accentColor,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ],
+            ),
+          ),
+
+          // Contenu (visible uniquement si activé)
+          if (enabled)
+            Padding(
+              padding: EdgeInsets.fromLTRB(14.w, 4.h, 14.w, 16.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Divider(color: context.colorBorder, height: 1),
+                  SizedBox(height: 14.h),
+                  ...children,
+                ],
+              ),
+            )
+          else
+            Padding(
+              padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 14.h),
+              child: Text(
+                'Désactivé',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: context.colorOnSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// Icone d'aide avec dialog explicatif
+class _HelpIcon extends StatelessWidget {
+  final String title;
+  final String message;
+  const _HelpIcon({required this.title, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(
+            title,
+            style: TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Text(
+            message,
+            style: TextStyle(fontSize: 13.sp, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Compris'),
+            ),
+          ],
+        ),
+      ),
+      child: Container(
+        padding: EdgeInsets.all(6.w),
+        decoration: BoxDecoration(
+          color: context.colorSurfaceContainerHighest,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          Icons.help_outline,
+          size: 16.w,
+          color: context.colorOnSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+// Sélecteur de pays avec recherche
+class _CountryPickerField extends StatelessWidget {
+  final String? value;
+  final ValueChanged<String> onSelected;
+
+  const _CountryPickerField({required this.value, required this.onSelected});
+
+  static const List<String> _countries = [
+    'Afghanistan', 'Afrique du Sud', 'Albanie', 'Algérie', 'Allemagne',
+    'Andorre', 'Angola', 'Antigua-et-Barbuda', 'Arabie saoudite', 'Argentine',
+    'Arménie', 'Australie', 'Autriche', 'Azerbaïdjan',
+    'Bahamas', 'Bahreïn', 'Bangladesh', 'Barbade', 'Belgique', 'Belize',
+    'Bénin', 'Bhoutan', 'Biélorussie', 'Birmanie', 'Bolivie',
+    'Bosnie-Herzégovine', 'Botswana', 'Brésil', 'Brunei', 'Bulgarie',
+    'Burkina Faso', 'Burundi',
+    'Cambodge', 'Cameroun', 'Canada', 'Cap-Vert', 'Chili', 'Chine',
+    'Chypre', 'Colombie', 'Comores', 'Congo',
+    'Corée du Nord', 'Corée du Sud', 'Costa Rica', "Côte d'Ivoire",
+    'Croatie', 'Cuba',
+    'Danemark', 'Djibouti', 'Dominique',
+    'Égypte', 'Émirats arabes unis', 'Équateur', 'Érythrée', 'Espagne',
+    'Eswatini', 'Estonie', 'États-Unis', 'Éthiopie',
+    'Fidji', 'Finlande', 'France',
+    'Gabon', 'Gambie', 'Géorgie', 'Ghana', 'Grèce', 'Grenade',
+    'Guatemala', 'Guinée', 'Guinée-Bissau', 'Guinée équatoriale', 'Guyana',
+    'Haïti', 'Honduras', 'Hongrie',
+    'Inde', 'Indonésie', 'Irak', 'Iran', 'Irlande', 'Islande',
+    'Israël', 'Italie',
+    'Jamaïque', 'Japon', 'Jordanie',
+    'Kazakhstan', 'Kenya', 'Kirghizistan', 'Kiribati', 'Kosovo', 'Koweït',
+    'Laos', 'Lesotho', 'Lettonie', 'Liban', 'Liberia', 'Libye',
+    'Liechtenstein', 'Lituanie', 'Luxembourg',
+    'Macédoine du Nord', 'Madagascar', 'Malaisie', 'Malawi', 'Maldives',
+    'Mali', 'Malte', 'Maroc', 'Marshall', 'Maurice', 'Mauritanie', 'Mexique',
+    'Micronésie', 'Moldavie', 'Monaco', 'Mongolie', 'Monténégro',
+    'Mozambique',
+    'Namibie', 'Nauru', 'Népal', 'Nicaragua', 'Niger', 'Nigéria',
+    'Norvège', 'Nouvelle-Zélande',
+    'Oman', 'Ouganda', 'Ouzbékistan',
+    'Pakistan', 'Palaos', 'Palestine', 'Panama',
+    'Papouasie-Nouvelle-Guinée', 'Paraguay', 'Pays-Bas', 'Pérou',
+    'Philippines', 'Pologne', 'Portugal',
+    'Qatar',
+    'République centrafricaine', 'République démocratique du Congo',
+    'République dominicaine', 'République tchèque', 'Roumanie',
+    'Royaume-Uni', 'Russie', 'Rwanda',
+    'Saint-Christophe-et-Niévès', 'Saint-Marin',
+    'Saint-Vincent-et-les-Grenadines', 'Sainte-Lucie',
+    'Îles Salomon', 'Salvador', 'Samoa', 'São Tomé-et-Príncipe',
+    'Sénégal', 'Serbie', 'Seychelles', 'Sierra Leone', 'Singapour',
+    'Slovaquie', 'Slovénie', 'Somalie', 'Soudan', 'Soudan du Sud',
+    'Sri Lanka', 'Suède', 'Suisse', 'Suriname', 'Syrie',
+    'Tadjikistan', 'Tanzanie', 'Tchad', 'Thaïlande', 'Timor oriental',
+    'Togo', 'Tonga', 'Trinité-et-Tobago', 'Tunisie', 'Turkménistan',
+    'Turquie', 'Tuvalu',
+    'Ukraine', 'Uruguay',
+    'Vanuatu', 'Vatican', 'Venezuela', 'Viêt Nam',
+    'Yémen',
+    'Zambie', 'Zimbabwe',
+  ];
+
+  void _openPicker(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (sheetCtx) => _CountrySearchSheet(
+        countries: _countries,
+        onSelected: (c) {
+          Navigator.pop(sheetCtx);
+          onSelected(c);
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Pays d\'origine',
+          style: TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 13.sp,
+            fontWeight: FontWeight.w500,
+            color: context.colorOnSurface,
+          ),
+        ),
+        SizedBox(height: 8.h),
+        GestureDetector(
+          onTap: () => _openPicker(context),
+          child: Container(
+            height: 48.h,
+            padding: EdgeInsets.symmetric(horizontal: 14.w),
+            decoration: BoxDecoration(
+              color: context.colorSurfaceContainerHighest,
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(color: context.colorBorder),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    value ?? 'Sélectionner un pays',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: value != null
+                          ? context.colorOnSurface
+                          : context.colorOnSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_drop_down,
+                  color: context.colorOnSurfaceVariant,
+                  size: 20.w,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CountrySearchSheet extends StatefulWidget {
+  final List<String> countries;
+  final ValueChanged<String> onSelected;
+
+  const _CountrySearchSheet({
+    required this.countries,
+    required this.onSelected,
+  });
+
+  @override
+  State<_CountrySearchSheet> createState() => _CountrySearchSheetState();
+}
+
+class _CountrySearchSheetState extends State<_CountrySearchSheet> {
+  final _searchCtrl = TextEditingController();
+  List<String> _filtered = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filtered = widget.countries;
+    _searchCtrl.addListener(() {
+      final q = _searchCtrl.text.toLowerCase();
+      setState(() {
+        _filtered = q.isEmpty
+            ? widget.countries
+            : widget.countries
+                .where((c) => c.toLowerCase().contains(q))
+                .toList();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 0.92,
+      builder: (_, controller) => Column(
+        children: [
+          // Handle
+          SizedBox(height: 8.h),
+          Container(
+            width: 40.w,
+            height: 4.h,
+            decoration: BoxDecoration(
+              color: context.colorBorder,
+              borderRadius: BorderRadius.circular(2.r),
+            ),
+          ),
+          SizedBox(height: 12.h),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: Text(
+              'Pays d\'origine',
+              style: TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+                color: context.colorOnSurface,
+              ),
+            ),
+          ),
+          SizedBox(height: 12.h),
+          // Search field
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: TextField(
+              controller: _searchCtrl,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Rechercher...',
+                prefixIcon: Icon(Icons.search,
+                    size: 18.w, color: context.colorOnSurfaceVariant),
+                filled: true,
+                fillColor: context.colorSurfaceContainerHighest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.r),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12.w, vertical: 10.h),
+              ),
+              style: TextStyle(fontSize: 14.sp),
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Divider(height: 1, color: context.colorBorder),
+          Expanded(
+            child: _filtered.isEmpty
+                ? Center(
+                    child: Text(
+                      'Aucun pays trouvé',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: context.colorOnSurfaceVariant,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: controller,
+                    itemCount: _filtered.length,
+                    itemBuilder: (_, i) => ListTile(
+                      title: Text(
+                        _filtered[i],
+                        style: TextStyle(fontSize: 14.sp),
+                      ),
+                      onTap: () => widget.onSelected(_filtered[i]),
+                      dense: true,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SwitchRow extends StatelessWidget {
+  final String label;
+  final String? subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _SwitchRow({
+    required this.label,
+    this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: context.colorSurfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w500,
+                    color: context.colorOnSurface,
+                  ),
+                ),
+                if (subtitle != null)
+                  Text(
+                    subtitle!,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: context.colorOnSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: context.colorPrimary,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ],
       ),
     );
   }
@@ -465,10 +1097,7 @@ class _PhotoPicker extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: context.colorSurfaceContainerHighest,
                       borderRadius: BorderRadius.circular(10.r),
-                      border: Border.all(
-                        color: context.colorBorder,
-                        style: BorderStyle.solid,
-                      ),
+                      border: Border.all(color: context.colorBorder),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -565,7 +1194,8 @@ class _CategoryPicker extends StatelessWidget {
               onTap: () => onChanged(cat),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+                padding:
+                    EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? context.colorPrimary
@@ -582,7 +1212,8 @@ class _CategoryPicker extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w500,
-                    color: isSelected ? Colors.white : context.colorOnSurface,
+                    color:
+                        isSelected ? Colors.white : context.colorOnSurface,
                   ),
                 ),
               ),
@@ -590,48 +1221,6 @@ class _CategoryPicker extends StatelessWidget {
           }).toList(),
         ),
       ],
-    );
-  }
-}
-
-class _SwitchRow extends StatelessWidget {
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  const _SwitchRow({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: context.colorSurfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w500,
-                color: context.colorOnSurface,
-              ),
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: context.colorPrimary,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-        ],
-      ),
     );
   }
 }
@@ -671,7 +1260,8 @@ class _DayPicker extends StatelessWidget {
                   : context.colorSurfaceContainerHighest,
               borderRadius: BorderRadius.circular(10.r),
               border: Border.all(
-                color: isSelected ? context.colorPrimary : context.colorBorder,
+                color:
+                    isSelected ? context.colorPrimary : context.colorBorder,
               ),
             ),
             child: Column(
@@ -693,4 +1283,3 @@ class _DayPicker extends StatelessWidget {
     );
   }
 }
-
