@@ -54,6 +54,9 @@ class AuthRepositoryImpl implements AuthRepository {
     List<String>? availableDays,
     String? approximateLocation,
     String? meetingPoint,
+    String? pickupAddress,
+    double? pickupLatitude,
+    double? pickupLongitude,
     String? coverPhotoUrl,
   }) =>
       _dataSource.updateProfile(
@@ -73,6 +76,9 @@ class AuthRepositoryImpl implements AuthRepository {
         availableDays: availableDays,
         approximateLocation: approximateLocation,
         meetingPoint: meetingPoint,
+        pickupAddress: pickupAddress,
+        pickupLatitude: pickupLatitude,
+        pickupLongitude: pickupLongitude,
         coverPhotoUrl: coverPhotoUrl,
       );
 

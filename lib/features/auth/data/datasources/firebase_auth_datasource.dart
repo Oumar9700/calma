@@ -112,6 +112,9 @@ class FirebaseAuthDataSource {
     List<String>? availableDays,
     String? approximateLocation,
     String? meetingPoint,
+    String? pickupAddress,
+    double? pickupLatitude,
+    double? pickupLongitude,
     String? coverPhotoUrl,
   }) async {
     final user = _auth.currentUser;
@@ -138,6 +141,9 @@ class FirebaseAuthDataSource {
       updates['approximateLocation'] = approximateLocation.trim();
     }
     if (meetingPoint != null) updates['meetingPoint'] = meetingPoint.trim();
+    if (pickupAddress != null) updates['pickupAddress'] = pickupAddress.trim();
+    if (pickupLatitude != null) updates['pickupLatitude'] = pickupLatitude;
+    if (pickupLongitude != null) updates['pickupLongitude'] = pickupLongitude;
     if (coverPhotoUrl != null) updates['coverPhotoUrl'] = coverPhotoUrl;
 
     if (updates.isNotEmpty) {

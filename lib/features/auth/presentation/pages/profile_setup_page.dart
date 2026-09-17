@@ -6,9 +6,13 @@ import '../../../../core/extensions/build_context_ext.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../di/injection_container.dart';
+import '../../../../shared/models/pickup_location.dart';
+import '../../../../shared/services/address_service.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_scaffold.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../../../shared/widgets/pickup_address_field.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -31,8 +35,11 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
   // Vendeur
   final _shopNameController = TextEditingController();
   final _shopDescController = TextEditingController();
+  final _pickupAddressController = TextEditingController();
   final _locationController = TextEditingController();
   final _meetingPointController = TextEditingController();
+  double? _pickupLatitude;
+  double? _pickupLongitude;
 
   final List<String> _selectedSpecialties = [];
   final List<String> _selectedPaymentMethods = [];
@@ -68,6 +75,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     _phoneController.dispose();
     _shopNameController.dispose();
     _shopDescController.dispose();
+    _pickupAddressController.dispose();
     _locationController.dispose();
     _meetingPointController.dispose();
     super.dispose();
@@ -126,6 +134,13 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   ? null
                   : _meetingPointController.text.trim())
               : null,
+          pickupAddress: role.isVendor
+              ? (_pickupAddressController.text.trim().isEmpty
+                  ? null
+                  : _pickupAddressController.text.trim())
+              : null,
+          pickupLatitude: role.isVendor ? _pickupLatitude : null,
+          pickupLongitude: role.isVendor ? _pickupLongitude : null,
         ));
   }
 
@@ -231,18 +246,39 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? 'Requis' : null,
                   ),
+                  SizedBox(height: 28.h),
+                  _SectionLabel('Point de retrait des commandes'),
+                  SizedBox(height: 6.h),
+                  Text(
+                    'Indiquez où vos clients viendront récupérer leurs commandes.',
+                    style: TextStyle(
+                        fontSize: 13.sp,
+                        color: context.colorOnSurfaceVariant,
+                        height: 1.4),
+                  ),
+                  AppSpacing.gapMd,
+                  PickupAddressField(
+                    controller: _pickupAddressController,
+                    addressService: sl<AddressService>(),
+                    onLocationDetected: (PickupLocation loc) {
+                      setState(() {
+                        _pickupLatitude = loc.latitude;
+                        _pickupLongitude = loc.longitude;
+                      });
+                    },
+                  ),
                   AppSpacing.gapMd,
                   AppTextField(
-                    label: 'Localisation approximative',
-                    hint: 'Ex : Quartier Villejean, Bus C4',
-                    controller: _locationController,
+                    label: 'Instructions complémentaires (optionnel)',
+                    hint: 'Ex : Sonner à l\'interphone B3, entrée côté parking...',
+                    controller: _meetingPointController,
                     textInputAction: TextInputAction.next,
                   ),
                   AppSpacing.gapMd,
                   AppTextField(
-                    label: 'Point de remise des commandes',
-                    hint: 'Ex : Bât. B entrée principale, Cafet Beaulieu...',
-                    controller: _meetingPointController,
+                    label: 'Zone / quartier indicatif (optionnel)',
+                    hint: 'Ex : Quartier Villejean, Bus C4, Campus Beaulieu',
+                    controller: _locationController,
                     textInputAction: TextInputAction.next,
                   ),
                   SizedBox(height: 24.h),

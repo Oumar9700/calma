@@ -62,6 +62,9 @@ class ProfileUpdateRequested extends AuthEvent {
   final List<String>? availableDays;
   final String? approximateLocation;
   final String? meetingPoint;
+  final String? pickupAddress;
+  final double? pickupLatitude;
+  final double? pickupLongitude;
   final String? coverPhotoUrl;
 
   const ProfileUpdateRequested({
@@ -81,6 +84,9 @@ class ProfileUpdateRequested extends AuthEvent {
     this.availableDays,
     this.approximateLocation,
     this.meetingPoint,
+    this.pickupAddress,
+    this.pickupLatitude,
+    this.pickupLongitude,
     this.coverPhotoUrl,
   });
 }

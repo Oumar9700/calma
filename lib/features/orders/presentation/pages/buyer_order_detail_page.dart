@@ -8,6 +8,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/extensions/build_context_ext.dart';
 import '../../../../core/router/app_routes.dart';
@@ -233,11 +234,15 @@ class _OrderDetailContentState extends State<_OrderDetailContent> {
                 SizedBox(height: 16.h),
               ],
               SizedBox(height: 8.h),
-              // Point de remise — visible dès acceptation
+              // Point de remise — visible dès que la commande est en cours
               if (order.status == OrderStatus.accepted ||
+                  order.status == OrderStatus.awaitingConfirmation ||
                   order.status == OrderStatus.preparing ||
                   order.status == OrderStatus.ready) ...[
-                _MeetingPointCard(vendorId: order.vendorId),
+                _MeetingPointCard(
+                  vendorId: order.vendorId,
+                  highlight: order.status == OrderStatus.ready,
+                ),
                 SizedBox(height: 16.h),
               ],
               // Code de confirmation — visible quand la commande est prête
@@ -950,72 +955,176 @@ class _GroupBuyProgressCardState extends State<_GroupBuyProgressCard> {
 
 class _MeetingPointCard extends StatefulWidget {
   final String vendorId;
-  const _MeetingPointCard({required this.vendorId});
+  final bool highlight;
+  const _MeetingPointCard({required this.vendorId, this.highlight = false});
 
   @override
   State<_MeetingPointCard> createState() => _MeetingPointCardState();
 }
 
 class _MeetingPointCardState extends State<_MeetingPointCard> {
-  late Future<String?> _meetingPointFuture;
+  late Future<_PickupInfo?> _future;
 
   @override
   void initState() {
     super.initState();
-    _meetingPointFuture = sl<AuthRepository>()
-        .getUserById(widget.vendorId)
-        .then((u) => u?.meetingPoint);
+    _future = sl<AuthRepository>().getUserById(widget.vendorId).then((u) {
+      if (u == null) return null;
+      return _PickupInfo(
+        address: u.pickupAddress,
+        instructions: u.meetingPoint,
+        latitude: u.pickupLatitude,
+        longitude: u.pickupLongitude,
+      );
+    });
+  }
+
+  Future<void> _openMap(_PickupInfo info) async {
+    Uri uri;
+    if (info.latitude != null && info.longitude != null) {
+      uri = Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=${info.latitude},${info.longitude}');
+    } else if (info.address != null) {
+      final encoded = Uri.encodeComponent(info.address!);
+      uri = Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=$encoded');
+    } else {
+      return;
+    }
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<String?>(
-      future: _meetingPointFuture,
+    return FutureBuilder<_PickupInfo?>(
+      future: _future,
       builder: (context, snap) {
-        final point = snap.data;
-        if (point == null || point.isEmpty) return const SizedBox.shrink();
+        final info = snap.data;
+        if (info == null ||
+            (info.address == null && info.instructions == null)) {
+          return const SizedBox.shrink();
+        }
+
+        final borderColor = widget.highlight
+            ? context.colorPrimary.withValues(alpha: 0.5)
+            : context.colorBorder;
+        final bgColor = widget.highlight
+            ? context.colorPrimary.withValues(alpha: 0.06)
+            : context.colorSurface;
+
         return Container(
           padding: EdgeInsets.all(16.w),
           decoration: BoxDecoration(
-            color: context.colorSurface,
+            color: bgColor,
             borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: context.colorBorder),
+            border: Border.all(color: borderColor, width: widget.highlight ? 1.5 : 1.0),
           ),
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.place_outlined, size: 20.r, color: context.colorPrimary),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Point de remise',
+              Row(
+                children: [
+                  Icon(
+                    widget.highlight
+                        ? Icons.place_rounded
+                        : Icons.place_outlined,
+                    size: 18.r,
+                    color: context.colorPrimary,
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      widget.highlight
+                          ? 'Votre commande est prête !'
+                          : 'Point de retrait',
                       style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w600,
-                        color: context.colorOnSurfaceVariant,
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w700,
+                        color: widget.highlight
+                            ? context.colorPrimary
+                            : context.colorOnSurface,
                       ),
                     ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      point,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w500,
-                        color: context.colorOnSurface,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              if (widget.highlight) ...[
+                SizedBox(height: 4.h),
+                Text(
+                  'Rendez-vous à l\'adresse ci-dessous pour récupérer votre commande.',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: context.colorOnSurface,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+              SizedBox(height: 10.h),
+              if (info.address != null) ...[
+                Text(
+                  info.address!,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w500,
+                    color: context.colorOnSurface,
+                  ),
+                ),
+              ],
+              if (info.instructions != null) ...[
+                SizedBox(height: 4.h),
+                Text(
+                  info.instructions!,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: context.colorOnSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+              if (info.address != null ||
+                  (info.latitude != null && info.longitude != null)) ...[
+                SizedBox(height: 12.h),
+                GestureDetector(
+                  onTap: () => _openMap(info),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.open_in_new,
+                          size: 14.w, color: context.colorPrimary),
+                      SizedBox(width: 4.w),
+                      Text(
+                        'Voir sur la carte',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: context.colorPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         );
       },
     );
   }
+}
+
+class _PickupInfo {
+  final String? address;
+  final String? instructions;
+  final double? latitude;
+  final double? longitude;
+
+  const _PickupInfo({
+    this.address,
+    this.instructions,
+    this.latitude,
+    this.longitude,
+  });
 }
 
 // ─── Code de confirmation ────────────────────────────────────────────────────

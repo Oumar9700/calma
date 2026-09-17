@@ -2,9 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/extensions/build_context_ext.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../di/injection_container.dart';
+import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../domain/entities/dish.dart';
 
 class DishDetailPage extends StatelessWidget {
@@ -72,6 +75,8 @@ class DishDetailPage extends StatelessWidget {
                     ),
                     SizedBox(height: 8.h),
                   ],
+                  SizedBox(height: 16.h),
+                  _VendorPickupSection(vendorId: dish.vendorId),
                   SizedBox(height: 100.h),
                 ],
               ),
@@ -282,6 +287,148 @@ class _InfoRow extends StatelessWidget {
       ],
     );
   }
+}
+
+// ─── Adresse de retrait vendeur ──────────────────────────────────────────────
+
+class _VendorPickupSection extends StatefulWidget {
+  final String vendorId;
+  const _VendorPickupSection({required this.vendorId});
+
+  @override
+  State<_VendorPickupSection> createState() => _VendorPickupSectionState();
+}
+
+class _VendorPickupSectionState extends State<_VendorPickupSection> {
+  late final Future<_VendorPickupData?> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = sl<AuthRepository>().getUserById(widget.vendorId).then((u) {
+      if (u == null) return null;
+      return _VendorPickupData(
+        address: u.pickupAddress,
+        instructions: u.meetingPoint,
+        latitude: u.pickupLatitude,
+        longitude: u.pickupLongitude,
+      );
+    });
+  }
+
+  Future<void> _openMap(_VendorPickupData data) async {
+    Uri uri;
+    if (data.latitude != null && data.longitude != null) {
+      uri = Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=${data.latitude},${data.longitude}');
+    } else if (data.address != null) {
+      final encoded = Uri.encodeComponent(data.address!);
+      uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$encoded');
+    } else {
+      return;
+    }
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_VendorPickupData?>(
+      future: _future,
+      builder: (context, snap) {
+        final data = snap.data;
+        if (data == null || (data.address == null && data.instructions == null)) {
+          return const SizedBox.shrink();
+        }
+        return Container(
+          padding: EdgeInsets.all(14.w),
+          decoration: BoxDecoration(
+            color: context.colorSurfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: context.colorBorder.withValues(alpha: 0.6)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.place_outlined,
+                      size: 15.w, color: context.colorPrimary),
+                  SizedBox(width: 6.w),
+                  Text(
+                    'Point de retrait',
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w600,
+                      color: context.colorOnSurface,
+                    ),
+                  ),
+                ],
+              ),
+              if (data.address != null) ...[
+                SizedBox(height: 8.h),
+                Text(
+                  data.address!,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: context.colorOnSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+              if (data.instructions != null) ...[
+                SizedBox(height: 4.h),
+                Text(
+                  data.instructions!,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: context.colorOnSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+              if (data.address != null || (data.latitude != null && data.longitude != null)) ...[
+                SizedBox(height: 10.h),
+                GestureDetector(
+                  onTap: () => _openMap(data),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.open_in_new,
+                          size: 13.w, color: context.colorPrimary),
+                      SizedBox(width: 4.w),
+                      Text(
+                        'Voir sur la carte',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: context.colorPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _VendorPickupData {
+  final String? address;
+  final String? instructions;
+  final double? latitude;
+  final double? longitude;
+
+  const _VendorPickupData({
+    this.address,
+    this.instructions,
+    this.latitude,
+    this.longitude,
+  });
 }
 
 class _BottomBar extends StatelessWidget {

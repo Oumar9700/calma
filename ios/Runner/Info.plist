@@ -41,6 +41,8 @@
 	<string>CALMA a besoin d'accéder à votre appareil photo pour prendre une photo de profil.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>CALMA a besoin d'accéder à votre galerie pour choisir une photo de profil.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>CALMA utilise votre position pour renseigner automatiquement votre adresse de retrait.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

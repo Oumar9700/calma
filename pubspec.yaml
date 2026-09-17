@@ -49,6 +49,13 @@ dependencies:
   # Internationalisation
   intl: ^0.20.2
 
+  # Géolocalisation
+  geolocator: ^13.0.2
+  geocoding: ^3.0.0
+
+  # Liens externes (carte, etc.)
+  url_launcher: ^6.3.1
+
   # Utils
   shared_preferences: ^2.5.3
   uuid: ^4.5.1

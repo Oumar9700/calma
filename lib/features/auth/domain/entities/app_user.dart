@@ -28,6 +28,9 @@ class AppUser extends Equatable {
   final List<String> availableDays;
   final String? approximateLocation;
   final String? meetingPoint;
+  final String? pickupAddress;
+  final double? pickupLatitude;
+  final double? pickupLongitude;
   final String? coverPhotoUrl;
 
   const AppUser({
@@ -55,6 +58,9 @@ class AppUser extends Equatable {
     this.availableDays = const [],
     this.approximateLocation,
     this.meetingPoint,
+    this.pickupAddress,
+    this.pickupLatitude,
+    this.pickupLongitude,
     this.coverPhotoUrl,
   });
 
@@ -90,6 +96,9 @@ class AppUser extends Equatable {
     List<String>? availableDays,
     String? approximateLocation,
     String? meetingPoint,
+    String? pickupAddress,
+    double? pickupLatitude,
+    double? pickupLongitude,
     String? coverPhotoUrl,
   }) {
     return AppUser(
@@ -117,6 +126,9 @@ class AppUser extends Equatable {
       availableDays: availableDays ?? this.availableDays,
       approximateLocation: approximateLocation ?? this.approximateLocation,
       meetingPoint: meetingPoint ?? this.meetingPoint,
+      pickupAddress: pickupAddress ?? this.pickupAddress,
+      pickupLatitude: pickupLatitude ?? this.pickupLatitude,
+      pickupLongitude: pickupLongitude ?? this.pickupLongitude,
       coverPhotoUrl: coverPhotoUrl ?? this.coverPhotoUrl,
     );
   }
@@ -147,6 +159,9 @@ class AppUser extends Equatable {
       'availableDays': availableDays,
       'approximateLocation': approximateLocation,
       'meetingPoint': meetingPoint,
+      'pickupAddress': pickupAddress,
+      'pickupLatitude': pickupLatitude,
+      'pickupLongitude': pickupLongitude,
       'coverPhotoUrl': coverPhotoUrl,
     };
   }
@@ -182,6 +197,9 @@ class AppUser extends Equatable {
       availableDays: strList(data['availableDays']),
       approximateLocation: data['approximateLocation'] as String?,
       meetingPoint: data['meetingPoint'] as String?,
+      pickupAddress: data['pickupAddress'] as String?,
+      pickupLatitude: (data['pickupLatitude'] as num?)?.toDouble(),
+      pickupLongitude: (data['pickupLongitude'] as num?)?.toDouble(),
       coverPhotoUrl: data['coverPhotoUrl'] as String?,
     );
   }

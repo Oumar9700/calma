@@ -127,6 +127,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         availableDays: event.availableDays,
         approximateLocation: event.approximateLocation,
         meetingPoint: event.meetingPoint,
+        pickupAddress: event.pickupAddress,
+        pickupLatitude: event.pickupLatitude,
+        pickupLongitude: event.pickupLongitude,
         coverPhotoUrl: event.coverPhotoUrl,
       );
       final updated = current.copyWith(
@@ -146,6 +149,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         availableDays: event.availableDays,
         approximateLocation: event.approximateLocation,
         meetingPoint: event.meetingPoint,
+        pickupAddress: event.pickupAddress,
+        pickupLatitude: event.pickupLatitude,
+        pickupLongitude: event.pickupLongitude,
         coverPhotoUrl: event.coverPhotoUrl,
       );
       emit(ProfileUpdateSuccess(updated));

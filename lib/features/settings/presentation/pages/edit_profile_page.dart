@@ -13,10 +13,13 @@ import '../../../../features/auth/domain/entities/app_user.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_event.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
+import '../../../../shared/models/pickup_location.dart';
+import '../../../../shared/services/address_service.dart';
 import '../../../../shared/services/storage_service.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_scaffold.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../../../shared/widgets/pickup_address_field.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -39,6 +42,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late final TextEditingController _shopNameCtrl;
   late final TextEditingController _shopDescCtrl;
   late final TextEditingController _locationCtrl;
+  late final TextEditingController _pickupAddressCtrl;
+  late final TextEditingController _meetingPointCtrl;
+  double? _pickupLatitude;
+  double? _pickupLongitude;
 
   List<String> _selectedSpecialties = [];
   List<String> _selectedPaymentMethods = [];
@@ -75,6 +82,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _shopNameCtrl = TextEditingController(text: _user?.shopName);
     _shopDescCtrl = TextEditingController(text: _user?.shopDescription);
     _locationCtrl = TextEditingController(text: _user?.approximateLocation);
+    _pickupAddressCtrl = TextEditingController(text: _user?.pickupAddress);
+    _meetingPointCtrl = TextEditingController(text: _user?.meetingPoint);
+    _pickupLatitude = _user?.pickupLatitude;
+    _pickupLongitude = _user?.pickupLongitude;
     _selectedSpecialties = List.from(_user?.specialties ?? []);
     _selectedPaymentMethods = List.from(_user?.paymentMethods ?? []);
     _selectedDays = List.from(_user?.availableDays ?? []);
@@ -91,6 +102,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _shopNameCtrl.dispose();
     _shopDescCtrl.dispose();
     _locationCtrl.dispose();
+    _pickupAddressCtrl.dispose();
+    _meetingPointCtrl.dispose();
     super.dispose();
   }
 
@@ -211,6 +224,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
           approximateLocation: _user?.isVendor == true
               ? _locationCtrl.text.trim()
               : null,
+          meetingPoint: _user?.isVendor == true
+              ? (_meetingPointCtrl.text.trim().isEmpty
+                  ? null
+                  : _meetingPointCtrl.text.trim())
+              : null,
+          pickupAddress: _user?.isVendor == true
+              ? (_pickupAddressCtrl.text.trim().isEmpty
+                  ? null
+                  : _pickupAddressCtrl.text.trim())
+              : null,
+          pickupLatitude: _user?.isVendor == true ? _pickupLatitude : null,
+          pickupLongitude: _user?.isVendor == true ? _pickupLongitude : null,
           specialties:
               _user?.isVendor == true ? _selectedSpecialties : null,
           paymentMethods:
@@ -369,9 +394,36 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     maxLines: 3,
                     textInputAction: TextInputAction.next,
                   ),
+                  SizedBox(height: 24.h),
+                  _SectionLabel('Point de retrait des commandes'),
+                  SizedBox(height: 6.h),
+                  Text(
+                    'Adresse où vos clients récupèrent leurs commandes.',
+                    style: TextStyle(
+                        fontSize: 12.sp,
+                        color: context.colorOnSurfaceVariant),
+                  ),
+                  AppSpacing.gapMd,
+                  PickupAddressField(
+                    controller: _pickupAddressCtrl,
+                    addressService: sl<AddressService>(),
+                    onLocationDetected: (PickupLocation loc) {
+                      setState(() {
+                        _pickupLatitude = loc.latitude;
+                        _pickupLongitude = loc.longitude;
+                      });
+                    },
+                  ),
                   AppSpacing.gapMd,
                   AppTextField(
-                    label: 'Localisation approximative',
+                    label: 'Instructions complémentaires (optionnel)',
+                    controller: _meetingPointCtrl,
+                    hint: 'Ex : Interphone 3B, côté parking...',
+                    textInputAction: TextInputAction.next,
+                  ),
+                  AppSpacing.gapMd,
+                  AppTextField(
+                    label: 'Zone indicative (optionnel)',
                     controller: _locationCtrl,
                     hint: 'Ex : Villejean, arrêt Bus C4',
                     textInputAction: TextInputAction.next,

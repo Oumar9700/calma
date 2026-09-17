@@ -29,6 +29,9 @@ abstract class AuthRepository {
     List<String>? availableDays,
     String? approximateLocation,
     String? meetingPoint,
+    String? pickupAddress,
+    double? pickupLatitude,
+    double? pickupLongitude,
     String? coverPhotoUrl,
   });
   Future<AppUser?> getCurrentUser();

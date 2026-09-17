@@ -490,6 +490,7 @@ class _PlanningTab extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Un créneau = une date non prévue (spontanée) où vous mettez un plat en précommande.\n'
+                  'Uniquement pour les plats déjà ouverts aux précommandes\n'
                   'Appuyez sur + pour créer un nouveau créneau.',
                   style: TextStyle(
                     fontSize: 12.sp,
