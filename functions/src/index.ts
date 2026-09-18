@@ -20,6 +20,7 @@ interface OrderData {
   status: string;
   type?: string;
   totalPrice: number;
+  quantity?: number;
   preorderDate?: admin.firestore.Timestamp;
   createdAt?: admin.firestore.Timestamp;
   isLateCancellation?: boolean;
@@ -30,6 +31,7 @@ interface OrderData {
   isCancelledByTimeout?: boolean;
   isCancelledBySlotDeactivation?: boolean;
   isCancelledByMinimumNotReached?: boolean;
+  isBulkGroupAccepted?: boolean;
 }
 
 interface NotifConfig {
@@ -113,7 +115,10 @@ export const onOrderCreated = onDocumentCreated(
       await db
         .collection("preorder_counts")
         .doc(`${data.dishId}__${dateStr}`)
-        .set({count: admin.firestore.FieldValue.increment(1)}, {merge: true});
+        .set(
+          {count: admin.firestore.FieldValue.increment(data.quantity ?? 1)},
+          {merge: true}
+        );
     }
 
     // Groupe d'achat : notifier le vendeur si le minimum vient d'être atteint
@@ -137,16 +142,18 @@ export const onOrderCreated = onDocumentCreated(
         .where("status", "==", "pending")
         .get();
 
-      const sameDayCount = snap.docs.filter((doc) => {
-        const ts = doc.data().preorderDate as
-          | admin.firestore.Timestamp
-          | undefined;
-        if (!ts) return false;
-        const d = ts.toDate();
-        return d >= startOfDay && d < endOfDay;
-      }).length;
+      const sameDayTotal = snap.docs
+        .filter((doc) => {
+          const ts = doc.data().preorderDate as
+            | admin.firestore.Timestamp
+            | undefined;
+          if (!ts) return false;
+          const d = ts.toDate();
+          return d >= startOfDay && d < endOfDay;
+        })
+        .reduce((sum, doc) => sum + ((doc.data().quantity as number) || 1), 0);
 
-      if (sameDayCount >= minimum) {
+      if (sameDayTotal >= minimum) {
         const dateStr = data.preorderDate
           .toDate()
           .toLocaleDateString("fr-FR", {weekday: "long", day: "numeric",
@@ -200,6 +207,23 @@ export const onOrderStatusChanged = onDocumentUpdated(
 
     switch (after.status) {
     case "accepted":
+      // Bulk accept d'un groupe précommande → reset le compteur pour cette date
+      if (
+        after.isBulkGroupAccepted &&
+        before.type === "preorder" &&
+        !before.slotId &&
+        before.dishId &&
+        before.preorderDate
+      ) {
+        const da = before.preorderDate.toDate();
+        const mma = String(da.getMonth() + 1).padStart(2, "0");
+        const dda = String(da.getDate() +1 ).padStart(2, "0");
+        const dateStrA = `${da.getFullYear()}-${mma}-${dda}`;
+        await db
+          .collection("preorder_counts")
+          .doc(`${before.dishId}__${dateStrA}`)
+          .set({count: 0}, {merge: false});
+      }
       config = {
         recipientId: buyerId,
         title: "Commande acceptee",
@@ -245,7 +269,6 @@ export const onOrderStatusChanged = onDocumentUpdated(
       break;
 
     case "cancelled":
-      // Décrémenter le compteur si c'était une précommande libre (sans créneau)
       if (
         before.type === "preorder" &&
         !before.slotId &&
@@ -254,15 +277,25 @@ export const onOrderStatusChanged = onDocumentUpdated(
       ) {
         const d = before.preorderDate.toDate();
         const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const dd = String(d.getDate()).padStart(2, "0");
+        const dd = String(d.getDate() + 1).padStart(2, "0");
         const dateStr = `${d.getFullYear()}-${mm}-${dd}`;
-        await db
+        const countRef = db
           .collection("preorder_counts")
-          .doc(`${before.dishId}__${dateStr}`)
-          .set(
-            {count: admin.firestore.FieldValue.increment(-1)},
+          .doc(`${before.dishId}__${dateStr}`);
+        if (after.isCancelledByMinimumNotReached) {
+          // Vendeur a refusé ou minimum non atteint → reset à 0
+          await countRef.set({count: 0}, {merge: false});
+        } else {
+          // Annulation normale → décrémenter de la quantité commandée
+          await countRef.set(
+            {
+              count: admin.firestore.FieldValue.increment(
+                -(before.quantity ?? 1)
+              ),
+            },
             {merge: true}
           );
+        }
       }
 
       if (after.isCancelledByTimeout) {
@@ -552,7 +585,7 @@ export const backfillPreorderCounts = onCall(
 
       const date = preorderDate.toDate();
       const mm = String(date.getMonth() + 1).padStart(2, "0");
-      const dd = String(date.getDate()).padStart(2, "0");
+      const dd = String(date.getDate() + 1).padStart(2, "0");
       const dateStr = `${date.getFullYear()}-${mm}-${dd}`;
       const key = `${dishId}__${dateStr}`;
       counts.set(key, (counts.get(key) ?? 0) + 1);

@@ -67,17 +67,19 @@ service cloud.firestore {
                     && request.resource.data.vendorId == request.auth.uid;
 
       // Modification/suppression : vendeur propriétaire uniquement
-      // Exception : un acheteur peut incrémenter (réservation) ou décrémenter (annulation)
+      // Exception : un acheteur peut incrémenter/décrémenter bookedQuantity (réservation/annulation)
+      // La quantité peut dépasser 1 — on vérifie juste que le résultat est dans [0, maxQuantity]
+      // et que les champs immuables (vendorId, dishId, maxQuantity, isActive) ne changent pas.
       allow update: if request.auth != null && (
         resource.data.vendorId == request.auth.uid
         || (
           request.auth.uid != resource.data.vendorId
           && request.resource.data.vendorId == resource.data.vendorId
           && request.resource.data.dishId == resource.data.dishId
-          && (
-            request.resource.data.bookedQuantity == resource.data.bookedQuantity + 1
-            || request.resource.data.bookedQuantity == resource.data.bookedQuantity - 1
-          )
+          && request.resource.data.maxQuantity == resource.data.maxQuantity
+          && request.resource.data.isActive == resource.data.isActive
+          && request.resource.data.bookedQuantity >= 0
+          && request.resource.data.bookedQuantity <= resource.data.maxQuantity
         )
       );
 

@@ -22,6 +22,8 @@ abstract class OrderRepository {
   });
 
   // ── Preorder slots (vendor) ───────────────────────────────────────────────
+  Future<void> bulkAcceptGroup(List<String> orderIds, String dishId, DateTime date);
+  Future<void> bulkRejectGroup(List<String> orderIds, String dishId, DateTime date);
   Future<int> countPreordersForDate(String dishId, DateTime date);
   Future<String> createPreorderSlot(PreorderSlot slot);
   Future<void> toggleSlotActive(String slotId, {required bool isActive});

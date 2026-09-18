@@ -35,11 +35,11 @@ class FirestoreOrderDataSource {
       final data = slotSnap.data()!;
       final booked = data['bookedQuantity'] as int? ?? 0;
       final max = data['maxQuantity'] as int? ?? 0;
-      if (booked >= max) throw Exception('Ce créneau est complet');
+      if (booked + order.quantity > max) throw Exception('Quantité demandée non disponible sur ce créneau');
       final orderRef = _orders.doc();
       orderId = orderRef.id;
       tx.set(orderRef, _orderToMap(order));
-      tx.update(slotRef, {'bookedQuantity': FieldValue.increment(1)});
+      tx.update(slotRef, {'bookedQuantity': FieldValue.increment(order.quantity)});
     });
     return orderId;
   }
@@ -55,11 +55,12 @@ class FirestoreOrderDataSource {
       if (isLate) 'isLateCancellation': true,
     });
 
-    // Décrémente le bookedQuantity si liée à un créneau
+    // Décrémente le bookedQuantity (quantité totale) si liée à un créneau
     final slotId = data?['slotId'] as String?;
     if (slotId != null) {
+      final qty = data?['quantity'] as int? ?? 1;
       batch.update(_slots.doc(slotId), {
-        'bookedQuantity': FieldValue.increment(-1),
+        'bookedQuantity': FieldValue.increment(-qty),
       });
     }
 
@@ -142,15 +143,17 @@ class FirestoreOrderDataSource {
     if (note != null) data['vendorNote'] = note;
     if (confirmationCode != null) data['confirmationCode'] = confirmationCode;
 
-    // Libère la place dans le créneau si la commande est refusée
+    // Libère la place (quantité totale) dans le créneau si la commande est refusée
     if (newStatus == OrderStatus.rejected) {
       final snap = await _orders.doc(orderId).get();
-      final slotId = snap.data()?['slotId'] as String?;
+      final orderData = snap.data();
+      final slotId = orderData?['slotId'] as String?;
       if (slotId != null) {
+        final qty = orderData?['quantity'] as int? ?? 1;
         final batch = _firestore.batch();
         batch.update(_orders.doc(orderId), data);
         batch.update(_slots.doc(slotId), {
-          'bookedQuantity': FieldValue.increment(-1),
+          'bookedQuantity': FieldValue.increment(-qty),
         });
         await batch.commit();
         return;
@@ -165,6 +168,36 @@ class FirestoreOrderDataSource {
   Future<String> createPreorderSlot(PreorderSlot slot) async {
     final ref = await _slots.add(_slotToMap(slot));
     return ref.id;
+  }
+
+  Future<void> bulkAcceptGroup(
+      List<String> orderIds, String dishId, DateTime date) async {
+    final batch = _firestore.batch();
+    final now = Timestamp.fromDate(DateTime.now());
+    for (final id in orderIds) {
+      // isBulkGroupAccepted → la CF détecte ce flag et reset preorder_counts
+      batch.update(_orders.doc(id), {
+        'status': OrderStatus.accepted.name,
+        'isBulkGroupAccepted': true,
+        'updatedAt': now,
+      });
+    }
+    await batch.commit();
+  }
+
+  Future<void> bulkRejectGroup(
+      List<String> orderIds, String dishId, DateTime date) async {
+    final batch = _firestore.batch();
+    final now = Timestamp.fromDate(DateTime.now());
+    for (final id in orderIds) {
+      // isCancelledByMinimumNotReached → la CF reset preorder_counts à 0
+      batch.update(_orders.doc(id), {
+        'status': OrderStatus.cancelled.name,
+        'isCancelledByMinimumNotReached': true,
+        'updatedAt': now,
+      });
+    }
+    await batch.commit();
   }
 
   Future<void> toggleSlotActive(String slotId, {required bool isActive}) async {

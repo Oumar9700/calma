@@ -50,6 +50,14 @@ class OrderRepositoryImpl implements OrderRepository {
           note: note, confirmationCode: confirmationCode);
 
   @override
+  Future<void> bulkAcceptGroup(List<String> orderIds, String dishId, DateTime date) =>
+      _datasource.bulkAcceptGroup(orderIds, dishId, date);
+
+  @override
+  Future<void> bulkRejectGroup(List<String> orderIds, String dishId, DateTime date) =>
+      _datasource.bulkRejectGroup(orderIds, dishId, date);
+
+  @override
   Future<int> countPreordersForDate(String dishId, DateTime date) =>
       _datasource.countPreordersForDate(dishId, date);
 

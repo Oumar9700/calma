@@ -26,6 +26,7 @@ class VendorOrderBloc extends Bloc<VendorOrderEvent, VendorOrderState> {
     on<CreatePreorderSlot>(_onCreatePreorderSlot);
     on<ToggleSlotActive>(_onToggleSlotActive);
     on<BulkAcceptPreorderGroup>(_onBulkAcceptPreorderGroup);
+    on<BulkRejectPreorderGroup>(_onBulkRejectPreorderGroup);
     on<DeactivateSlotWithCancellations>(_onDeactivateSlotWithCancellations);
     on<LoadVendorSlots>(_onLoadVendorSlots);
     on<VendorOrdersUpdatedInternal>(_onVendorOrdersUpdated);
@@ -133,12 +134,27 @@ class VendorOrderBloc extends Bloc<VendorOrderEvent, VendorOrderState> {
   Future<void> _onBulkAcceptPreorderGroup(
       BulkAcceptPreorderGroup event, Emitter<VendorOrderState> emit) async {
     try {
-      for (final id in event.orderIds) {
-        await _repository.updateOrderStatus(id, OrderStatus.accepted);
-      }
+      await _repository.bulkAcceptGroup(
+          event.orderIds, event.dishId, event.preorderDate);
       _actionController.add(
         OrderActionMessage(
             '${event.orderIds.length} précommande${event.orderIds.length > 1 ? 's validées' : ' validée'}',
+            OrderActionResult.success),
+      );
+    } catch (e) {
+      _actionController.add(
+          OrderActionMessage('Erreur : $e', OrderActionResult.error));
+    }
+  }
+
+  Future<void> _onBulkRejectPreorderGroup(
+      BulkRejectPreorderGroup event, Emitter<VendorOrderState> emit) async {
+    try {
+      await _repository.bulkRejectGroup(
+          event.orderIds, event.dishId, event.preorderDate);
+      _actionController.add(
+        OrderActionMessage(
+            'Groupe refusé — ${event.orderIds.length} réservation${event.orderIds.length > 1 ? 's annulées' : ' annulée'}',
             OrderActionResult.success),
       );
     } catch (e) {

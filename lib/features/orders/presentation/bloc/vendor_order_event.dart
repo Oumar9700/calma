@@ -44,9 +44,22 @@ class ToggleSlotActive extends VendorOrderEvent {
 
 class BulkAcceptPreorderGroup extends VendorOrderEvent {
   final List<String> orderIds;
-  const BulkAcceptPreorderGroup(this.orderIds);
+  final String dishId;
+  final DateTime preorderDate;
+  const BulkAcceptPreorderGroup(this.orderIds,
+      {required this.dishId, required this.preorderDate});
   @override
-  List<Object?> get props => [orderIds];
+  List<Object?> get props => [orderIds, dishId, preorderDate];
+}
+
+class BulkRejectPreorderGroup extends VendorOrderEvent {
+  final List<String> orderIds;
+  final String dishId;
+  final DateTime preorderDate;
+  const BulkRejectPreorderGroup(this.orderIds,
+      {required this.dishId, required this.preorderDate});
+  @override
+  List<Object?> get props => [orderIds, dishId, preorderDate];
 }
 
 class DeactivateSlotWithCancellations extends VendorOrderEvent {

@@ -582,7 +582,7 @@ class _DateOptionTile extends StatelessWidget {
             Icon(Icons.people_outline, size: 12.w, color: context.colorOnSurfaceVariant),
             SizedBox(width: 4.w),
             Text(
-              '${free.reservedCount}/$effectiveMin réservation${effectiveMin > 1 ? 's' : ''}',
+              '${free.reservedCount}/$effectiveMin portion${effectiveMin > 1 ? 's' : ''}',
               style: TextStyle(fontSize: 11.sp, color: context.colorOnSurfaceVariant),
             ),
             SizedBox(width: 8.w),
@@ -698,7 +698,7 @@ class _GroupBuyInfoBanner extends StatelessWidget {
           Text(
             reached
                 ? 'Minimum atteint ! Le vendeur peut valider.'
-                : 'Aucun paiement maintenant. Si $minimum réservation${minimum > 1 ? 's sont' : ' est'} atteinte${minimum > 1 ? 's' : ''} avant la clôture, vous recevrez une notification.',
+                : 'Aucun paiement maintenant. Si $minimum portion${minimum > 1 ? 's sont' : ' est'} atteinte${minimum > 1 ? 's' : ''} avant la clôture, vous recevrez une notification.',
             style: TextStyle(
               fontSize: 12.sp,
               color: context.colorOnSurfaceVariant,

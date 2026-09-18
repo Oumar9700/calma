@@ -249,7 +249,10 @@ class _PreorderGroupTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final first = groupOrders.first;
     final minimum = first.preorderGroupMinimum ?? 1;
-    final count = groupOrders.length;
+    //final count = groupOrders.length;
+    final count = groupOrders
+        .where((o) => o.status == OrderStatus.pending)
+        .fold<int>(0, (sum, o) => sum + o.quantity);
     final reached = count >= minimum;
     final dateStr = first.preorderDate != null
         ? DateFormat('EEEE d MMMM yyyy', 'fr').format(first.preorderDate!)
@@ -322,24 +325,86 @@ class _PreorderGroupTile extends StatelessWidget {
             ),
           SizedBox(height: 12.h),
           if (reached)
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () {
-                  context.read<VendorOrderBloc>().add(
-                        BulkAcceptPreorderGroup(
-                            groupOrders.map((o) => o.id).toList()),
-                      );
-                },
-                icon: Icon(Icons.check_circle_outline, size: 16.r),
-                label: const Text('Valider le groupe'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF22C55E),
-                  minimumSize: Size(0, 38.h),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.r)),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      context.read<VendorOrderBloc>().add(
+                            BulkAcceptPreorderGroup(
+                              groupOrders
+                                  .where((o) => o.status == OrderStatus.pending)
+                                  .map((o) => o.id)
+                                  .toList(),
+                              dishId: first.dishId,
+                              preorderDate: first.preorderDate!,
+                            ),
+                          );
+                    },
+                    icon: Icon(Icons.check_circle_outline, size: 16.r),
+                    label: const Text('Valider'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF22C55E),
+                      minimumSize: Size(0, 38.h),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r)),
+                    ),
+                  ),
                 ),
-              ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Refuser ce groupe ?'),
+                          content: Text(
+                            'Toutes les ${groupOrders.where((o) => o.status == OrderStatus.pending).length} '
+                            'réservation${groupOrders.where((o) => o.status == OrderStatus.pending).length > 1 ? 's' : ''} '
+                            'seront annulées et les acheteurs notifiés.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Annuler'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Theme.of(ctx).colorScheme.error,
+                              ),
+                              child: const Text('Refuser'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true && context.mounted) {
+                        context.read<VendorOrderBloc>().add(
+                              BulkRejectPreorderGroup(
+                                groupOrders
+                                    .where((o) => o.status == OrderStatus.pending)
+                                    .map((o) => o.id)
+                                    .toList(),
+                                dishId: first.dishId,
+                                preorderDate: first.preorderDate!,
+                              ),
+                            );
+                      }
+                    },
+                    icon: Icon(Icons.cancel_outlined, size: 16.r),
+                    label: const Text('Refuser'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      side: BorderSide(
+                          color: Theme.of(context).colorScheme.error),
+                      minimumSize: Size(0, 38.h),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r)),
+                    ),
+                  ),
+                ),
+              ],
             )
           else
             Text(
